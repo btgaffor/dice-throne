@@ -21,6 +21,7 @@
 /storage/*
 !/storage/.keep
 
+/elm-stuff
 /node_modules
 /yarn-error.log
 
