@@ -28,6 +28,7 @@ type alias Roll =
 
 type alias Model =
     { roll : Roll
+    , showAdjust : Bool
     }
 
 
@@ -37,14 +38,14 @@ type alias Model =
 
 init : ( Model, Cmd Message )
 init =
-    ( Model [ newDie 1, newDie 2, newDie 3, newDie 4, newDie 5 ], Cmd.none )
+    ( Model [ newDie 1, newDie 2, newDie 3, newDie 4, newDie 5 ] False, Cmd.none )
 
 
 
 -- VIEW
 
 
-renderDie index die =
+renderDie showAdjust index die =
     let
         color =
             if die.reroll then
@@ -52,13 +53,28 @@ renderDie index die =
             else
                 "btn-success"
     in
-        button [ class "btn", class color, style "margin-left" "4px", onClick (ToggleReroll index) ]
-            [ text <| String.fromInt die.result
+        div [ style "display" "flex", style "flex-direction" "column" ]
+            [ if showAdjust then
+                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-bottom" "4px", onClick (AdjustDie index -1) ]
+                    [ text "-"
+                    ]
+              else
+                text ""
+            , button [ class "btn", class color, style "margin-left" "4px", onClick (ToggleReroll index) ]
+                [ text <| String.fromInt die.result
+                ]
+            , if showAdjust then
+                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-top" "4px", onClick (AdjustDie index 1) ]
+                    [ text "+"
+                    ]
+              else
+                text ""
             ]
 
 
-renderDice dice =
-    List.indexedMap renderDie dice
+renderDice showAdjust dice =
+    div [ style "display" "flex", style "flex-direction" "row", style "margin-top" "16px", style "margin-left" "12px" ]
+        (List.indexedMap (renderDie showAdjust) dice)
 
 
 rollButton =
@@ -66,15 +82,20 @@ rollButton =
 
 
 selectAllButton =
-    button [ class "btn", class "btn-secondary", onClick SelectAll, style "margin-top" "16px", style "margin-left" "4px" ] [ text "Select ALL" ]
+    button [ class "btn", class "btn-secondary", onClick SelectAll, style "margin-top" "16px", style "margin-left" "4px" ] [ text "Select All" ]
+
+
+toggleAdjustButton =
+    button [ class "btn", class "btn-secondary", onClick ToggleAdjust, style "margin-top" "16px", style "margin-left" "4px" ] [ text "Adjust" ]
 
 
 view : Model -> Html Message
 view model =
     div []
-        [ div [ style "margin-top" "16px", style "margin-left" "12px" ] (renderDice model.roll)
+        [ (renderDice model.showAdjust model.roll)
         , rollButton
         , selectAllButton
+        , toggleAdjustButton
         ]
 
 
@@ -97,6 +118,8 @@ type Message
     | NewRoll (List Die)
     | ToggleReroll Int
     | SelectAll
+    | ToggleAdjust
+    | AdjustDie Int Int
 
 
 
@@ -138,6 +161,24 @@ update message model =
         SelectAll ->
             ( { model
                 | roll = List.map (\die -> { die | reroll = True }) model.roll
+              }
+            , Cmd.none
+            )
+
+        ToggleAdjust ->
+            ( { model | showAdjust = not model.showAdjust }, Cmd.none )
+
+        AdjustDie index amount ->
+            ( { model
+                | roll =
+                    List.indexedMap
+                        (\dieIndex die ->
+                            if dieIndex == index then
+                                { die | result = clamp 1 6 (die.result + amount) }
+                            else
+                                die
+                        )
+                        model.roll
               }
             , Cmd.none
             )
