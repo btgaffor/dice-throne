@@ -1,7 +1,7 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, div, h1, text, button)
+import Html exposing (Html, div, h1, h6, text, button)
 import Html.Attributes exposing (style, class)
 import Html.Events exposing (onClick)
 import Random
@@ -29,6 +29,8 @@ type alias Roll =
 type alias Model =
     { roll : Roll
     , showAdjust : Bool
+    , health : Int
+    , combatPoints : Int
     }
 
 
@@ -38,7 +40,7 @@ type alias Model =
 
 init : ( Model, Cmd Message )
 init =
-    ( Model [ newDie 1, newDie 2, newDie 3, newDie 4, newDie 5 ] False, Cmd.none )
+    ( Model [ newDie 1, newDie 2, newDie 3, newDie 4, newDie 5 ] False 50 2, Cmd.none )
 
 
 
@@ -89,13 +91,49 @@ toggleAdjustButton =
     button [ class "btn", class "btn-secondary", onClick ToggleAdjust, style "margin-top" "16px", style "margin-left" "4px" ] [ text "Adjust" ]
 
 
+minusButton message =
+    button [ class "btn", class "btn-secondary", onClick (message -1) ]
+        [ text "-" ]
+
+
+valueDisplay value =
+    div [ style "padding" "8px" ]
+        [ text <| String.fromInt value
+        ]
+
+
+plusButton message =
+    button [ class "btn", class "btn-secondary", onClick (message 1) ]
+        [ text "+" ]
+
+
 view : Model -> Html Message
 view model =
-    div []
-        [ (renderDice model.showAdjust model.roll)
-        , rollButton
-        , selectAllButton
-        , toggleAdjustButton
+    div [ style "display" "flex", style "flex-direction" "column" ]
+        [ div []
+            [ (renderDice model.showAdjust model.roll)
+            , rollButton
+            , selectAllButton
+            , toggleAdjustButton
+            ]
+        , div [ style "display" "flex", style "flex-direction" "row" ]
+            [ div [ style "display" "flex", style "flex-direction" "column", style "margin-left" "16px", style "margin-top" "16px" ]
+                [ h6 [] [ text "Health" ]
+                , div [ style "display" "flex", style "flex-direction" "row" ]
+                    [ minusButton AdjustHealth
+                    , valueDisplay model.health
+                    , plusButton AdjustHealth
+                    ]
+                ]
+            , div [ style "display" "flex", style "flex-direction" "column", style "margin-left" "16px", style "margin-top" "16px" ]
+                [ h6 [] [ text "CP" ]
+                , div [ style "display" "flex", style "flex-direction" "row" ]
+                    [ minusButton AdjustCombatPoints
+                    , valueDisplay model.combatPoints
+                    , plusButton AdjustCombatPoints
+                    ]
+                ]
+            ]
         ]
 
 
@@ -120,6 +158,8 @@ type Message
     | SelectAll
     | ToggleAdjust
     | AdjustDie Int Int
+    | AdjustHealth Int
+    | AdjustCombatPoints Int
 
 
 
@@ -182,6 +222,12 @@ update message model =
               }
             , Cmd.none
             )
+
+        AdjustHealth amount ->
+            ( { model | health = clamp 0 99 (model.health + amount) }, Cmd.none )
+
+        AdjustCombatPoints amount ->
+            ( { model | combatPoints = clamp 0 15 (model.combatPoints + amount) }, Cmd.none )
 
 
 
