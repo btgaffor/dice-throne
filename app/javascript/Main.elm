@@ -65,16 +65,16 @@ renderDie showAdjust index die =
     in
         flexCol []
             [ if showAdjust then
-                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-bottom" "4px", onClick (AdjustDie index -1) ]
+                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-bottom" "4px", onClick (UpdatePlayer 0 <| AdjustDie index -1) ]
                     [ text "-"
                     ]
               else
                 text ""
-            , button [ class "btn", class color, style "margin-left" "4px", onClick (ToggleReroll index) ]
+            , button [ class "btn", class color, style "margin-left" "4px", onClick (UpdatePlayer 0 <| ToggleReroll index) ]
                 [ text <| String.fromInt die.result
                 ]
             , if showAdjust then
-                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-top" "4px", onClick (AdjustDie index 1) ]
+                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-top" "4px", onClick (UpdatePlayer 0 <| AdjustDie index 1) ]
                     [ text "+"
                     ]
               else
@@ -88,15 +88,15 @@ renderDice showAdjust dice =
 
 
 rollButton =
-    button [ class "btn", class "btn-primary", style "margin-top" "16px", style "margin-left" "16px", onClick DoRoll ] [ text "Roll" ]
+    button [ class "btn", class "btn-primary", style "margin-top" "16px", style "margin-left" "16px", onClick (UpdatePlayer 0 DoRoll) ] [ text "Roll" ]
 
 
 selectAllButton =
-    button [ class "btn", class "btn-secondary", onClick SelectAll, style "margin-top" "16px", style "margin-left" "4px" ] [ text "Select All" ]
+    button [ class "btn", class "btn-secondary", onClick (UpdatePlayer 0 SelectAll), style "margin-top" "16px", style "margin-left" "4px" ] [ text "Select All" ]
 
 
 toggleAdjustButton =
-    button [ class "btn", class "btn-secondary", onClick ToggleAdjust, style "margin-top" "16px", style "margin-left" "4px" ] [ text "Adjust" ]
+    button [ class "btn", class "btn-secondary", onClick (UpdatePlayer 0 ToggleAdjust), style "margin-top" "16px", style "margin-left" "4px" ] [ text "Adjust" ]
 
 
 minusButton message =
@@ -136,17 +136,17 @@ view model =
             [ flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
                 [ h6 [] [ text "Health" ]
                 , flexRow []
-                    [ minusButton AdjustHealth
+                    [ minusButton (UpdatePlayer 0 << AdjustHealth)
                     , valueDisplay model.health
-                    , plusButton AdjustHealth
+                    , plusButton (UpdatePlayer 0 << AdjustHealth)
                     ]
                 ]
             , flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
                 [ h6 [] [ text "CP" ]
                 , flexRow []
-                    [ minusButton AdjustCombatPoints
+                    [ minusButton (UpdatePlayer 0 << AdjustCombatPoints)
                     , valueDisplay model.combatPoints
-                    , plusButton AdjustCombatPoints
+                    , plusButton (UpdatePlayer 0 << AdjustCombatPoints)
                     ]
                 ]
             ]
@@ -171,7 +171,7 @@ rollDice rollCount =
     Random.list rollCount rollDie
 
 
-type Message
+type PlayerMessage
     = DoRoll
     | NewRoll (List Die)
     | ToggleReroll Int
@@ -180,6 +180,10 @@ type Message
     | AdjustDie Int Int
     | AdjustHealth Int
     | AdjustCombatPoints Int
+
+
+type Message
+    = UpdatePlayer Int PlayerMessage
 
 
 
@@ -194,8 +198,8 @@ notRerolledDice dice =
     List.filter (not << .reroll) dice
 
 
-update : Message -> Model -> ( Model, Cmd Message )
-update message model =
+updatePlayer : PlayerMessage -> Model -> ( Model, Cmd PlayerMessage )
+updatePlayer message model =
     case message of
         DoRoll ->
             ( model, Random.generate NewRoll <| rollDice <| rerollCount model.roll )
@@ -248,6 +252,17 @@ update message model =
 
         AdjustCombatPoints amount ->
             ( { model | combatPoints = clamp 0 15 (model.combatPoints + amount) }, Cmd.none )
+
+
+update : Message -> Model -> ( Model, Cmd Message )
+update message model =
+    case message of
+        UpdatePlayer player playerMessage ->
+            let
+                ( updatedModel, cmd ) =
+                    updatePlayer playerMessage model
+            in
+                ( updatedModel, Cmd.map (UpdatePlayer 0) cmd )
 
 
 
