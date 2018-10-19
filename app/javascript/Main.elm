@@ -1,8 +1,8 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, div, h1, h6, text, button)
-import Html.Attributes exposing (style, class)
+import Html exposing (Html, div, h1, h6, text, button, img)
+import Html.Attributes exposing (style, class, src)
 import Html.Events exposing (onClick)
 import Random
 
@@ -47,6 +47,14 @@ init =
 -- VIEW
 
 
+flexRow attributes children =
+    div (List.concat [ attributes, [ style "display" "flex", style "flex-direction" "row" ] ]) children
+
+
+flexCol attributes children =
+    div (List.concat [ attributes, [ style "display" "flex", style "flex-direction" "column" ] ]) children
+
+
 renderDie showAdjust index die =
     let
         color =
@@ -55,7 +63,7 @@ renderDie showAdjust index die =
             else
                 "btn-success"
     in
-        div [ style "display" "flex", style "flex-direction" "column" ]
+        flexCol []
             [ if showAdjust then
                 button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-bottom" "4px", onClick (AdjustDie index -1) ]
                     [ text "-"
@@ -75,7 +83,7 @@ renderDie showAdjust index die =
 
 
 renderDice showAdjust dice =
-    div [ style "display" "flex", style "flex-direction" "row", style "margin-top" "16px", style "margin-left" "12px" ]
+    flexRow [ style "margin-top" "16px", style "margin-left" "12px" ]
         (List.indexedMap (renderDie showAdjust) dice)
 
 
@@ -107,32 +115,44 @@ plusButton message =
         [ text "+" ]
 
 
+actionBoard url =
+    img [ src url, style "width" "400px", style "height" "336px", style "display" "inline" ] []
+
+
+guideBoard url =
+    img [ src url, style "width" "200px", style "height" "314px", style "display" "inline" ] []
+
+
 view : Model -> Html Message
 view model =
-    div [ style "display" "flex", style "flex-direction" "column" ]
+    flexCol []
         [ div []
             [ (renderDice model.showAdjust model.roll)
             , rollButton
             , selectAllButton
             , toggleAdjustButton
             ]
-        , div [ style "display" "flex", style "flex-direction" "row" ]
-            [ div [ style "display" "flex", style "flex-direction" "column", style "margin-left" "16px", style "margin-top" "16px" ]
+        , flexRow []
+            [ flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
                 [ h6 [] [ text "Health" ]
-                , div [ style "display" "flex", style "flex-direction" "row" ]
+                , flexRow []
                     [ minusButton AdjustHealth
                     , valueDisplay model.health
                     , plusButton AdjustHealth
                     ]
                 ]
-            , div [ style "display" "flex", style "flex-direction" "column", style "margin-left" "16px", style "margin-top" "16px" ]
+            , flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
                 [ h6 [] [ text "CP" ]
-                , div [ style "display" "flex", style "flex-direction" "row" ]
+                , flexRow []
                     [ minusButton AdjustCombatPoints
                     , valueDisplay model.combatPoints
                     , plusButton AdjustCombatPoints
                     ]
                 ]
+            ]
+        , flexRow []
+            [ guideBoard "barbarian_guide.jpg"
+            , actionBoard "barbarian_actions.png"
             ]
         ]
 
