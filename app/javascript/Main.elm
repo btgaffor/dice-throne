@@ -65,16 +65,16 @@ renderDie showAdjust index die =
     in
         flexCol []
             [ if showAdjust then
-                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-bottom" "4px", onClick (UpdatePlayer 0 <| AdjustDie index -1) ]
+                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-bottom" "4px", onClick (AdjustDie index -1) ]
                     [ text "-"
                     ]
               else
                 text ""
-            , button [ class "btn", class color, style "margin-left" "4px", onClick (UpdatePlayer 0 <| ToggleReroll index) ]
+            , button [ class "btn", class color, style "margin-left" "4px", onClick (ToggleReroll index) ]
                 [ text <| String.fromInt die.result
                 ]
             , if showAdjust then
-                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-top" "4px", onClick (UpdatePlayer 0 <| AdjustDie index 1) ]
+                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-top" "4px", onClick (AdjustDie index 1) ]
                     [ text "+"
                     ]
               else
@@ -88,15 +88,15 @@ renderDice showAdjust dice =
 
 
 rollButton =
-    button [ class "btn", class "btn-primary", style "margin-top" "16px", style "margin-left" "16px", onClick (UpdatePlayer 0 DoRoll) ] [ text "Roll" ]
+    button [ class "btn", class "btn-primary", style "margin-top" "16px", style "margin-left" "16px", onClick DoRoll ] [ text "Roll" ]
 
 
 selectAllButton =
-    button [ class "btn", class "btn-secondary", onClick (UpdatePlayer 0 SelectAll), style "margin-top" "16px", style "margin-left" "4px" ] [ text "Select All" ]
+    button [ class "btn", class "btn-secondary", onClick SelectAll, style "margin-top" "16px", style "margin-left" "4px" ] [ text "Select All" ]
 
 
 toggleAdjustButton =
-    button [ class "btn", class "btn-secondary", onClick (UpdatePlayer 0 ToggleAdjust), style "margin-top" "16px", style "margin-left" "4px" ] [ text "Adjust" ]
+    button [ class "btn", class "btn-secondary", onClick ToggleAdjust, style "margin-top" "16px", style "margin-left" "4px" ] [ text "Adjust" ]
 
 
 minusButton message =
@@ -123,8 +123,8 @@ guideBoard url =
     img [ src url, style "width" "200px", style "height" "314px", style "display" "inline" ] []
 
 
-view : Model -> Html Message
-view model =
+renderPlayer : Model -> Html PlayerMessage
+renderPlayer model =
     flexCol []
         [ div []
             [ (renderDice model.showAdjust model.roll)
@@ -136,17 +136,17 @@ view model =
             [ flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
                 [ h6 [] [ text "Health" ]
                 , flexRow []
-                    [ minusButton (UpdatePlayer 0 << AdjustHealth)
+                    [ minusButton AdjustHealth
                     , valueDisplay model.health
-                    , plusButton (UpdatePlayer 0 << AdjustHealth)
+                    , plusButton AdjustHealth
                     ]
                 ]
             , flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
                 [ h6 [] [ text "CP" ]
                 , flexRow []
-                    [ minusButton (UpdatePlayer 0 << AdjustCombatPoints)
+                    [ minusButton AdjustCombatPoints
                     , valueDisplay model.combatPoints
-                    , plusButton (UpdatePlayer 0 << AdjustCombatPoints)
+                    , plusButton AdjustCombatPoints
                     ]
                 ]
             ]
@@ -155,6 +155,11 @@ view model =
             , actionBoard "barbarian_actions.png"
             ]
         ]
+
+
+view : Model -> Html Message
+view model =
+    Html.map (UpdatePlayer 0) (renderPlayer model)
 
 
 
