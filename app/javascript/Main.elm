@@ -70,8 +70,8 @@ renderDie showAdjust index die =
     in
         flexCol []
             [ if showAdjust then
-                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-bottom" "4px", onClick (AdjustDie index -1) ]
-                    [ text "-"
+                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-bottom" "4px", onClick (AdjustDie index 1) ]
+                    [ text "+"
                     ]
               else
                 text ""
@@ -79,8 +79,8 @@ renderDie showAdjust index die =
                 [ text <| String.fromInt die.result
                 ]
             , if showAdjust then
-                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-top" "4px", onClick (AdjustDie index 1) ]
-                    [ text "+"
+                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-top" "4px", onClick (AdjustDie index -1) ]
+                    [ text "-"
                     ]
               else
                 text ""
