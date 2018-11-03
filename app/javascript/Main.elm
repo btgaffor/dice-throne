@@ -29,7 +29,12 @@ type alias Roll =
 type alias Model =
     { roll : Roll
     , showAdjust : Bool
-    , health : Int
+    , player : Player
+    }
+
+
+type alias Player =
+    { health : Int
     , combatPoints : Int
     }
 
@@ -40,7 +45,7 @@ type alias Model =
 
 init : ( Model, Cmd Message )
 init =
-    ( Model [ newDie 1, newDie 2, newDie 3, newDie 4, newDie 5 ] False 50 2, Cmd.none )
+    ( Model [ newDie 1, newDie 2, newDie 3, newDie 4, newDie 5 ] False (Player 50 2), Cmd.none )
 
 
 
@@ -137,7 +142,7 @@ renderPlayer model =
                 [ h6 [] [ text "Health" ]
                 , flexRow []
                     [ minusButton AdjustHealth
-                    , valueDisplay model.health
+                    , valueDisplay model.player.health
                     , plusButton AdjustHealth
                     ]
                 ]
@@ -145,7 +150,7 @@ renderPlayer model =
                 [ h6 [] [ text "CP" ]
                 , flexRow []
                     [ minusButton AdjustCombatPoints
-                    , valueDisplay model.combatPoints
+                    , valueDisplay model.player.combatPoints
                     , plusButton AdjustCombatPoints
                     ]
                 ]
@@ -253,10 +258,20 @@ updatePlayer message model =
             )
 
         AdjustHealth amount ->
-            ( { model | health = clamp 0 99 (model.health + amount) }, Cmd.none )
+            let
+                player =
+                    model.player
+            in
+                ( { model | player = { player | health = clamp 0 99 (player.health + amount) } }
+                , Cmd.none
+                )
 
         AdjustCombatPoints amount ->
-            ( { model | combatPoints = clamp 0 15 (model.combatPoints + amount) }, Cmd.none )
+            let
+                player =
+                    model.player
+            in
+                ( { model | player = { player | combatPoints = clamp 0 15 (player.combatPoints + amount) } }, Cmd.none )
 
 
 update : Message -> Model -> ( Model, Cmd Message )
