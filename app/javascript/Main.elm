@@ -5,6 +5,7 @@ import Html exposing (Html, div, h1, h6, text, button, img)
 import Html.Attributes exposing (style, class, src)
 import Html.Events exposing (onClick)
 import Random
+import Array exposing (Array)
 
 
 -- MODEL
@@ -29,7 +30,7 @@ type alias Roll =
 type alias Model =
     { roll : Roll
     , showAdjust : Bool
-    , player : Player
+    , players : Array Player
     }
 
 
@@ -45,7 +46,7 @@ type alias Player =
 
 init : ( Model, Cmd Message )
 init =
-    ( Model [ newDie 1, newDie 2, newDie 3, newDie 4, newDie 5 ] False (Player 50 2), Cmd.none )
+    ( Model [ newDie 1, newDie 2, newDie 3, newDie 4, newDie 5 ] False (Array.fromList [ Player 50 2 ]), Cmd.none )
 
 
 
@@ -60,36 +61,51 @@ flexCol attributes children =
     div (List.concat [ attributes, [ style "display" "flex", style "flex-direction" "column" ] ]) children
 
 
-renderDie showAdjust index die =
-    let
-        color =
-            if die.reroll then
-                "btn-danger"
-            else
-                "btn-success"
-    in
-        flexCol []
-            [ if showAdjust then
-                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-bottom" "4px", onClick (AdjustDie index 1) ]
-                    [ text "+"
-                    ]
-              else
-                text ""
-            , button [ class "btn", class color, style "margin-left" "4px", onClick (ToggleReroll index) ]
-                [ text <| String.fromInt die.result
-                ]
-            , if showAdjust then
-                button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-top" "4px", onClick (AdjustDie index -1) ]
-                    [ text "-"
-                    ]
-              else
-                text ""
+renderDiePlus : Bool -> Int -> Html Message
+renderDiePlus showAdjust index =
+    if showAdjust then
+        button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-bottom" "4px", onClick (AdjustDie index 1) ]
+            [ text "+"
             ]
+    else
+        text ""
+
+
+renderDieMinus : Bool -> Int -> Html Message
+renderDieMinus showAdjust index =
+    if showAdjust then
+        button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-top" "4px", onClick (AdjustDie index -1) ]
+            [ text "-"
+            ]
+    else
+        text ""
+
+
+dieColor : Bool -> String
+dieColor reroll =
+    if reroll then
+        "btn-danger"
+    else
+        "btn-success"
+
+
+renderDie die index =
+    button [ class "btn", class <| dieColor die.reroll, style "margin-left" "4px", onClick (ToggleReroll index) ]
+        [ text <| String.fromInt die.result
+        ]
+
+
+renderDieWithAdjust showAdjust index die =
+    flexCol []
+        [ renderDiePlus showAdjust index
+        , renderDie die index
+        , renderDieMinus showAdjust index
+        ]
 
 
 renderDice showAdjust dice =
     flexRow [ style "margin-top" "16px", style "margin-left" "12px" ]
-        (List.indexedMap (renderDie showAdjust) dice)
+        (List.indexedMap (renderDieWithAdjust showAdjust) dice)
 
 
 rollButton =
@@ -128,7 +144,7 @@ guideBoard url =
     img [ src url, style "width" "200px", style "height" "314px", style "display" "inline" ] []
 
 
-renderPlayer : Model -> Html PlayerMessage
+renderPlayer : Model -> Html Message
 renderPlayer model =
     flexCol []
         [ div []
@@ -138,23 +154,29 @@ renderPlayer model =
             , toggleAdjustButton
             ]
         , flexRow []
-            [ flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
-                [ h6 [] [ text "Health" ]
-                , flexRow []
-                    [ minusButton AdjustHealth
-                    , valueDisplay model.player.health
-                    , plusButton AdjustHealth
+            (case Array.get 0 model.players of
+                Just player ->
+                    [ flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
+                        [ h6 [] [ text "Health" ]
+                        , flexRow []
+                            [ minusButton ((UpdatePlayer 0) << AdjustHealth)
+                            , valueDisplay player.health
+                            , plusButton ((UpdatePlayer 0) << AdjustHealth)
+                            ]
+                        ]
+                    , flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
+                        [ h6 [] [ text "CP" ]
+                        , flexRow []
+                            [ minusButton ((UpdatePlayer 0) << AdjustCombatPoints)
+                            , valueDisplay player.combatPoints
+                            , plusButton ((UpdatePlayer 0) << AdjustCombatPoints)
+                            ]
+                        ]
                     ]
-                ]
-            , flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
-                [ h6 [] [ text "CP" ]
-                , flexRow []
-                    [ minusButton AdjustCombatPoints
-                    , valueDisplay model.player.combatPoints
-                    , plusButton AdjustCombatPoints
-                    ]
-                ]
-            ]
+
+                Nothing ->
+                    []
+            )
         , flexRow []
             [ guideBoard "barbarian_guide.jpg"
             , actionBoard "barbarian_actions.png"
@@ -164,7 +186,7 @@ renderPlayer model =
 
 view : Model -> Html Message
 view model =
-    Html.map (UpdatePlayer 0) (renderPlayer model)
+    renderPlayer model
 
 
 
@@ -182,18 +204,18 @@ rollDice rollCount =
 
 
 type PlayerMessage
+    = AdjustHealth Int
+    | AdjustCombatPoints Int
+
+
+type Message
     = DoRoll
     | NewRoll (List Die)
     | ToggleReroll Int
     | SelectAll
     | ToggleAdjust
     | AdjustDie Int Int
-    | AdjustHealth Int
-    | AdjustCombatPoints Int
-
-
-type Message
-    = UpdatePlayer Int PlayerMessage
+    | UpdatePlayer Int PlayerMessage
 
 
 
@@ -208,8 +230,18 @@ notRerolledDice dice =
     List.filter (not << .reroll) dice
 
 
-updatePlayer : PlayerMessage -> Model -> ( Model, Cmd PlayerMessage )
-updatePlayer message model =
+updatePlayer : PlayerMessage -> Player -> Player
+updatePlayer message player =
+    case message of
+        AdjustHealth amount ->
+            { player | health = clamp 0 99 (player.health + amount) }
+
+        AdjustCombatPoints amount ->
+            { player | combatPoints = clamp 0 15 (player.combatPoints + amount) }
+
+
+update : Message -> Model -> ( Model, Cmd Message )
+update message model =
     case message of
         DoRoll ->
             ( model, Random.generate NewRoll <| rollDice <| rerollCount model.roll )
@@ -257,32 +289,19 @@ updatePlayer message model =
             , Cmd.none
             )
 
-        AdjustHealth amount ->
+        UpdatePlayer playerIndex playerMessage ->
             let
-                player =
-                    model.player
+                updatedPlayers =
+                    Array.indexedMap
+                        (\index player ->
+                            if index == playerIndex then
+                                updatePlayer playerMessage player
+                            else
+                                player
+                        )
+                        model.players
             in
-                ( { model | player = { player | health = clamp 0 99 (player.health + amount) } }
-                , Cmd.none
-                )
-
-        AdjustCombatPoints amount ->
-            let
-                player =
-                    model.player
-            in
-                ( { model | player = { player | combatPoints = clamp 0 15 (player.combatPoints + amount) } }, Cmd.none )
-
-
-update : Message -> Model -> ( Model, Cmd Message )
-update message model =
-    case message of
-        UpdatePlayer player playerMessage ->
-            let
-                ( updatedModel, cmd ) =
-                    updatePlayer playerMessage model
-            in
-                ( updatedModel, Cmd.map (UpdatePlayer 0) cmd )
+                ( { model | players = updatedPlayers }, Cmd.none )
 
 
 
