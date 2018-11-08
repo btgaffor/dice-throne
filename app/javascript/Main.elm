@@ -1,10 +1,11 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, div, h1, h6, text, button, img)
+import Html exposing (Html, div, h1, h6, text, button, img, sup)
 import Html.Attributes exposing (style, class, src)
 import Html.Events exposing (onClick)
 import Random
+import List.Extra
 import Array exposing (Array)
 
 
@@ -23,20 +24,21 @@ newDie result =
 
 
 type alias Roll =
-    -- 5 dice
     List Die
 
 
 type alias Model =
     { roll : Roll
     , showAdjust : Bool
-    , players : Array Player
+    , players : List Player
+    , currentPlayer : Int
     }
 
 
 type alias Player =
     { health : Int
     , combatPoints : Int
+    , guideImage : String
     }
 
 
@@ -44,9 +46,25 @@ type alias Player =
 -- INIT
 
 
+initialPlayerOne : Player
+initialPlayerOne =
+    { health = 50
+    , combatPoints = 2
+    , guideImage = "barbarian_guide.jpg"
+    }
+
+
+initialPlayerTwo : Player
+initialPlayerTwo =
+    { health = 50
+    , combatPoints = 2
+    , guideImage = "moon_elf_guide.jpg"
+    }
+
+
 init : ( Model, Cmd Message )
 init =
-    ( Model [ newDie 1, newDie 2, newDie 3, newDie 4, newDie 5 ] False (Array.fromList [ Player 50 2 ]), Cmd.none )
+    ( Model [ newDie 1, newDie 2, newDie 3, newDie 4, newDie 5 ] False [ initialPlayerOne, initialPlayerTwo ] 0, Cmd.none )
 
 
 
@@ -59,6 +77,18 @@ flexRow attributes children =
 
 flexCol attributes children =
     div (List.concat [ attributes, [ style "display" "flex", style "flex-direction" "column" ] ]) children
+
+
+barbarianDieIcons =
+    Array.fromList
+        [ ""
+        , "barbarian_sword.png"
+        , "barbarian_sword.png"
+        , "barbarian_sword.png"
+        , "barbarian_heart.png"
+        , "barbarian_heart.png"
+        , "barbarian_pow.png"
+        ]
 
 
 renderDiePlus : Bool -> Int -> Html Message
@@ -89,9 +119,22 @@ dieColor reroll =
         "btn-success"
 
 
+dieIcon : Int -> Array String -> String
+dieIcon number icons =
+    case Array.get number icons of
+        Just icon ->
+            icon
+
+        Nothing ->
+            ""
+
+
 renderDie die index =
-    button [ class "btn", class <| dieColor die.reroll, style "margin-left" "4px", onClick (ToggleReroll index) ]
-        [ text <| String.fromInt die.result
+    button [ class "btn", class <| dieColor die.reroll, style "width" "50px", style "height" "50px", style "margin-left" "4px", onClick (ToggleReroll index) ]
+        [ img [ src <| dieIcon die.result barbarianDieIcons, style "width" "20px", style "height" "20px", style "display" "inline" ] []
+        , sup []
+            [ text <| String.fromInt die.result
+            ]
         ]
 
 
@@ -144,49 +187,81 @@ guideBoard url =
     img [ src url, style "width" "200px", style "height" "314px", style "display" "inline" ] []
 
 
+renderDiceSection model =
+    div []
+        [ (renderDice model.showAdjust model.roll)
+        , rollButton
+        , selectAllButton
+        , toggleAdjustButton
+        ]
+
+
 renderPlayer : Model -> Html Message
 renderPlayer model =
-    flexCol []
-        [ div []
-            [ (renderDice model.showAdjust model.roll)
-            , rollButton
-            , selectAllButton
-            , toggleAdjustButton
-            ]
-        , flexRow []
-            (case Array.get 0 model.players of
-                Just player ->
-                    [ flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
-                        [ h6 [] [ text "Health" ]
+    div []
+        (List.indexedMap
+            (\index player ->
+                if index == model.currentPlayer then
+                    flexCol []
+                        [ flexRow [ style "margin-bottom" "16px" ]
+                            [ flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
+                                [ h6 [] [ text "Health" ]
+                                , flexRow []
+                                    [ minusButton (UpdatePlayer model.currentPlayer << AdjustHealth)
+                                    , valueDisplay player.health
+                                    , plusButton (UpdatePlayer model.currentPlayer << AdjustHealth)
+                                    ]
+                                ]
+                            , flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
+                                [ h6 [] [ text "CP" ]
+                                , flexRow []
+                                    [ minusButton (UpdatePlayer model.currentPlayer << AdjustCombatPoints)
+                                    , valueDisplay player.combatPoints
+                                    , plusButton (UpdatePlayer model.currentPlayer << AdjustCombatPoints)
+                                    ]
+                                ]
+                            ]
                         , flexRow []
-                            [ minusButton ((UpdatePlayer 0) << AdjustHealth)
-                            , valueDisplay player.health
-                            , plusButton ((UpdatePlayer 0) << AdjustHealth)
+                            [ guideBoard player.guideImage
+                            , actionBoard "barbarian_actions.png"
                             ]
                         ]
-                    , flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
-                        [ h6 [] [ text "CP" ]
-                        , flexRow []
-                            [ minusButton ((UpdatePlayer 0) << AdjustCombatPoints)
-                            , valueDisplay player.combatPoints
-                            , plusButton ((UpdatePlayer 0) << AdjustCombatPoints)
-                            ]
-                        ]
-                    ]
-
-                Nothing ->
-                    []
+                else
+                    text ""
             )
-        , flexRow []
-            [ guideBoard "barbarian_guide.jpg"
-            , actionBoard "barbarian_actions.png"
+            model.players
+        )
+
+
+renderPlayerSidebarItem : Int -> Int -> Player -> Html Message
+renderPlayerSidebarItem currentPlayer index player =
+    let
+        backgroundColor =
+            if currentPlayer == index then
+                "lightgreen"
+            else
+                "white"
+    in
+        flexCol [ style "border-bottom" "solid 1px black", style "border-left" "1px solid black", style "padding" "12px", style "background-color" backgroundColor, onClick (SelectPlayer index) ]
+            [ div [] [ text <| "HP: " ++ (String.fromInt player.health) ]
+            , div [] [ text <| "CP: " ++ (String.fromInt player.combatPoints) ]
             ]
-        ]
 
 
 view : Model -> Html Message
 view model =
-    renderPlayer model
+    flexRow []
+        [ div [ style "flex-grow" "1" ]
+            [ flexCol []
+                [ renderDiceSection model
+                , renderPlayer model
+                ]
+            ]
+        , div [ style "flex-basis" "300px" ]
+            [ flexCol []
+                (List.indexedMap (renderPlayerSidebarItem model.currentPlayer) model.players)
+            ]
+        ]
 
 
 
@@ -216,6 +291,7 @@ type Message
     | ToggleAdjust
     | AdjustDie Int Int
     | UpdatePlayer Int PlayerMessage
+    | SelectPlayer Int
 
 
 
@@ -252,13 +328,9 @@ update message model =
         ToggleReroll index ->
             ( { model
                 | roll =
-                    List.indexedMap
-                        (\dieIndex die ->
-                            if dieIndex == index then
-                                { die | reroll = not die.reroll }
-                            else
-                                die
-                        )
+                    List.Extra.updateAt
+                        index
+                        (\die -> { die | reroll = not die.reroll })
                         model.roll
               }
             , Cmd.none
@@ -277,31 +349,23 @@ update message model =
         AdjustDie index amount ->
             ( { model
                 | roll =
-                    List.indexedMap
-                        (\dieIndex die ->
-                            if dieIndex == index then
-                                { die | result = clamp 1 6 (die.result + amount) }
-                            else
-                                die
-                        )
+                    List.Extra.updateAt
+                        index
+                        (\die -> { die | result = clamp 1 6 (die.result + amount) })
                         model.roll
               }
             , Cmd.none
             )
 
         UpdatePlayer playerIndex playerMessage ->
-            let
-                updatedPlayers =
-                    Array.indexedMap
-                        (\index player ->
-                            if index == playerIndex then
-                                updatePlayer playerMessage player
-                            else
-                                player
-                        )
-                        model.players
-            in
-                ( { model | players = updatedPlayers }, Cmd.none )
+            ( { model
+                | players = List.Extra.updateAt playerIndex (updatePlayer playerMessage) model.players
+              }
+            , Cmd.none
+            )
+
+        SelectPlayer selectedPlayer ->
+            ( { model | currentPlayer = selectedPlayer }, Cmd.none )
 
 
 
