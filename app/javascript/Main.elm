@@ -38,7 +38,48 @@ type alias Model =
 type alias Player =
     { health : Int
     , combatPoints : Int
-    , guideImage : String
+    , character : Character
+    }
+
+
+type alias Character =
+    { guideImage : String
+    , actionImage : String
+    , dieIcons : Array.Array String
+    }
+
+
+barbarian : Character
+barbarian =
+    { guideImage = "barbarian_guide.jpg"
+    , actionImage = "barbarian_actions.png"
+    , dieIcons =
+        Array.fromList
+            [ ""
+            , "barbarian_sword.png"
+            , "barbarian_sword.png"
+            , "barbarian_sword.png"
+            , "barbarian_heart.png"
+            , "barbarian_heart.png"
+            , "barbarian_pow.png"
+            ]
+    }
+
+
+moonElf : Character
+moonElf =
+    { guideImage = "moon_elf_guide.jpg"
+    , actionImage = "barbarian_actions.png"
+    , dieIcons =
+        Array.fromList
+            [ ""
+            , "barbarian_sword.png"
+            , "barbarian_sword.png"
+            , "barbarian_sword.png"
+            , "barbarian_heart.png"
+            , "barbarian_heart.png"
+            , "barbarian_pow.png"
+            ]
     }
 
 
@@ -50,7 +91,7 @@ initialPlayerOne : Player
 initialPlayerOne =
     { health = 50
     , combatPoints = 2
-    , guideImage = "barbarian_guide.jpg"
+    , character = barbarian
     }
 
 
@@ -58,7 +99,7 @@ initialPlayerTwo : Player
 initialPlayerTwo =
     { health = 50
     , combatPoints = 2
-    , guideImage = "moon_elf_guide.jpg"
+    , character = moonElf
     }
 
 
@@ -129,26 +170,26 @@ dieIcon number icons =
             ""
 
 
-renderDie die index =
+renderDie die index dieIcons =
     button [ class "btn", class <| dieColor die.reroll, style "width" "50px", style "height" "50px", style "margin-left" "4px", onClick (ToggleReroll index) ]
-        [ img [ src <| dieIcon die.result barbarianDieIcons, style "width" "20px", style "height" "20px", style "display" "inline" ] []
+        [ img [ src <| dieIcon die.result dieIcons, style "width" "20px", style "height" "20px", style "display" "inline" ] []
         , sup []
             [ text <| String.fromInt die.result
             ]
         ]
 
 
-renderDieWithAdjust showAdjust index die =
+renderDieWithAdjust showAdjust dieIcons index die =
     flexCol []
         [ renderDiePlus showAdjust index
-        , renderDie die index
+        , renderDie die index dieIcons
         , renderDieMinus showAdjust index
         ]
 
 
-renderDice showAdjust dice =
+renderDice showAdjust dieIcons dice =
     flexRow [ style "margin-top" "16px", style "margin-left" "12px" ]
-        (List.indexedMap (renderDieWithAdjust showAdjust) dice)
+        (List.indexedMap (renderDieWithAdjust showAdjust dieIcons) dice)
 
 
 rollButton =
@@ -187,9 +228,9 @@ guideBoard url =
     img [ src url, style "width" "200px", style "height" "314px", style "display" "inline" ] []
 
 
-renderDiceSection model =
+renderDiceSection model dieIcons =
     div []
-        [ (renderDice model.showAdjust model.roll)
+        [ (renderDice model.showAdjust dieIcons model.roll)
         , rollButton
         , selectAllButton
         , toggleAdjustButton
@@ -203,7 +244,8 @@ renderPlayer model =
             (\index player ->
                 if index == model.currentPlayer then
                     flexCol []
-                        [ flexRow [ style "margin-bottom" "16px" ]
+                        [ renderDiceSection model player.character.dieIcons
+                        , flexRow [ style "margin-bottom" "16px" ]
                             [ flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
                                 [ h6 [] [ text "Health" ]
                                 , flexRow []
@@ -222,8 +264,8 @@ renderPlayer model =
                                 ]
                             ]
                         , flexRow []
-                            [ guideBoard player.guideImage
-                            , actionBoard "barbarian_actions.png"
+                            [ guideBoard player.character.guideImage
+                            , actionBoard player.character.actionImage
                             ]
                         ]
                 else
@@ -252,10 +294,7 @@ view : Model -> Html Message
 view model =
     flexRow []
         [ div [ style "flex-grow" "1" ]
-            [ flexCol []
-                [ renderDiceSection model
-                , renderPlayer model
-                ]
+            [ renderPlayer model
             ]
         , div [ style "flex-basis" "300px" ]
             [ flexCol []
