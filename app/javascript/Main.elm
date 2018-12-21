@@ -225,7 +225,7 @@ actionBoard url =
 
 
 guideBoard url =
-    img [ src url, style "width" "200px", style "height" "314px", style "display" "inline" ] []
+    img [ src url, style "width" "214px", style "height" "336px", style "display" "inline" ] []
 
 
 renderDiceSection model dieIcons =
