@@ -69,7 +69,7 @@ barbarian =
 moonElf : Character
 moonElf =
     { guideImage = "moon_elf_guide.jpg"
-    , actionImage = "barbarian_actions.png"
+    , actionImage = "moon_elf_actions.png"
     , dieIcons =
         Array.fromList
             [ ""
