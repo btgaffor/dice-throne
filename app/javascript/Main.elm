@@ -221,11 +221,11 @@ plusButton message =
 
 
 actionBoard url =
-    img [ src url, style "width" "400px", style "height" "336px", style "display" "inline" ] []
+    img [ src url, style "width" "500px", style "height" "419px", style "display" "inline" ] []
 
 
 guideBoard url =
-    img [ src url, style "width" "214px", style "height" "336px", style "display" "inline" ] []
+    img [ src url, style "width" "268px", style "height" "419px", style "display" "inline" ] []
 
 
 renderDiceSection model dieIcons =
@@ -296,7 +296,7 @@ view model =
         [ div [ style "flex-grow" "1" ]
             [ renderPlayer model
             ]
-        , div [ style "flex-basis" "300px" ]
+        , div [ style "flex-basis" "250px" ]
             [ flexCol []
                 (List.indexedMap (renderPlayerSidebarItem model.currentPlayer) model.players)
             ]
