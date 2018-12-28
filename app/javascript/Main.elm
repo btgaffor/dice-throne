@@ -112,14 +112,6 @@ init =
 -- VIEW
 
 
-flexRow attributes children =
-    div (List.concat [ attributes, [ style "display" "flex", style "flex-direction" "row" ] ]) children
-
-
-flexCol attributes children =
-    div (List.concat [ attributes, [ style "display" "flex", style "flex-direction" "column" ] ]) children
-
-
 barbarianDieIcons =
     Array.fromList
         [ ""
@@ -135,7 +127,7 @@ barbarianDieIcons =
 renderDiePlus : Bool -> Int -> Html Message
 renderDiePlus showAdjust index =
     if showAdjust then
-        button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-bottom" "4px", onClick (AdjustDie index 1) ]
+        button [ class "btn", class "btn-secondary", class "die-adjust", onClick (AdjustDie index 1) ]
             [ text "+"
             ]
     else
@@ -145,7 +137,7 @@ renderDiePlus showAdjust index =
 renderDieMinus : Bool -> Int -> Html Message
 renderDieMinus showAdjust index =
     if showAdjust then
-        button [ class "btn", class "btn-secondary", style "margin-left" "4px", style "margin-top" "4px", onClick (AdjustDie index -1) ]
+        button [ class "btn", class "btn-secondary", class "die-adjust", onClick (AdjustDie index -1) ]
             [ text "-"
             ]
     else
@@ -162,17 +154,12 @@ dieColor reroll =
 
 dieIcon : Int -> Array String -> String
 dieIcon number icons =
-    case Array.get number icons of
-        Just icon ->
-            icon
-
-        Nothing ->
-            ""
+    Maybe.withDefault "" <| Array.get number icons
 
 
 renderDie die index dieIcons =
-    button [ class "btn", class <| dieColor die.reroll, style "width" "50px", style "height" "50px", style "margin-left" "4px", onClick (ToggleReroll index) ]
-        [ img [ src <| dieIcon die.result dieIcons, style "width" "20px", style "height" "20px", style "display" "inline" ] []
+    button [ class "btn", class <| dieColor die.reroll, class "die-button", onClick (ToggleReroll index) ]
+        [ img [ src <| dieIcon die.result dieIcons, class "die-icon" ] []
         , sup []
             [ text <| String.fromInt die.result
             ]
@@ -180,52 +167,60 @@ renderDie die index dieIcons =
 
 
 renderDieWithAdjust showAdjust dieIcons index die =
-    flexCol []
+    div [ class "flex-col" ]
         [ renderDiePlus showAdjust index
         , renderDie die index dieIcons
         , renderDieMinus showAdjust index
         ]
 
 
+renderReduceNumberOfDice show =
+    if show then
+        div [ class "flex-col", style "justify-content" "center" ]
+            [ button [ class "btn", class "btn-secondary", class "die-button", onClick DecreaseNumberOfDice ] [ text "-" ]
+            ]
+    else
+        text ""
+
+
+renderIncreaseNumberOfDice showAdjust =
+    if showAdjust then
+        div [ class "flex-col", style "justify-content" "center" ]
+            [ button [ class "btn", class "btn-secondary", class "die-button", onClick IncreaseNumberOfDice ] [ text "+" ]
+            ]
+    else
+        text ""
+
+
 renderDice showAdjust dieIcons dice =
-    flexRow [ style "margin-top" "16px", style "margin-left" "12px" ]
-        (List.indexedMap (renderDieWithAdjust showAdjust dieIcons) dice)
+    div [ class "flex-row dice" ]
+        (List.concat
+            [ [ renderReduceNumberOfDice <| showAdjust && (List.length dice) > 1 ]
+            , (List.indexedMap (renderDieWithAdjust showAdjust dieIcons) dice)
+            , [ renderIncreaseNumberOfDice <| showAdjust && (List.length dice) < 5 ]
+            ]
+        )
 
 
 rollButton =
-    button [ class "btn", class "btn-primary", style "margin-top" "16px", style "margin-left" "16px", onClick DoRoll ] [ text "Roll" ]
+    button [ class "btn btn-primary", class "roll", onClick DoRoll ] [ text "Roll" ]
 
 
 selectAllButton =
-    button [ class "btn", class "btn-secondary", onClick SelectAll, style "margin-top" "16px", style "margin-left" "4px" ] [ text "Select All" ]
+    button [ class "btn btn-secondary", onClick SelectAll, class "select-all" ] [ text "Select All" ]
 
 
 toggleAdjustButton =
-    button [ class "btn", class "btn-secondary", onClick ToggleAdjust, style "margin-top" "16px", style "margin-left" "4px" ] [ text "Adjust" ]
+    button [ class "btn btn-secondary", onClick ToggleAdjust, class "toggle-adjust" ] [ text "Adjust" ]
 
 
 minusButton message =
-    button [ class "btn", class "btn-secondary", onClick (message -1) ]
+    button [ class "btn btn-secondary", onClick (message -1) ]
         [ text "-" ]
 
 
-valueDisplay value =
-    div [ style "padding" "8px" ]
-        [ text <| String.fromInt value
-        ]
-
-
 plusButton message =
-    button [ class "btn", class "btn-secondary", onClick (message 1) ]
-        [ text "+" ]
-
-
-actionBoard url =
-    img [ src url, style "width" "500px", style "height" "419px", style "display" "inline" ] []
-
-
-guideBoard url =
-    img [ src url, style "width" "268px", style "height" "419px", style "display" "inline" ] []
+    button [ class "btn btn-secondary", onClick (message 1) ] [ text "+" ]
 
 
 renderDiceSection model dieIcons =
@@ -237,35 +232,41 @@ renderDiceSection model dieIcons =
         ]
 
 
+valueDisplay value =
+    div [ class "value-display" ]
+        [ text <| String.fromInt value
+        ]
+
+
 renderPlayer : Model -> Html Message
 renderPlayer model =
     div []
         (List.indexedMap
             (\index player ->
                 if index == model.currentPlayer then
-                    flexCol []
+                    div [ class "flex-col" ]
                         [ renderDiceSection model player.character.dieIcons
-                        , flexRow [ style "margin-bottom" "16px" ]
-                            [ flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
+                        , div [ class "flex-row", style "margin-bottom" "16px" ]
+                            [ div [ class "flex-col", style "margin-left" "16px", style "margin-top" "16px" ]
                                 [ h6 [] [ text "Health" ]
-                                , flexRow []
+                                , div [ class "flex-row" ]
                                     [ minusButton (UpdatePlayer model.currentPlayer << AdjustHealth)
                                     , valueDisplay player.health
                                     , plusButton (UpdatePlayer model.currentPlayer << AdjustHealth)
                                     ]
                                 ]
-                            , flexCol [ style "margin-left" "16px", style "margin-top" "16px" ]
+                            , div [ class "flex-col", style "margin-left" "16px", style "margin-top" "16px" ]
                                 [ h6 [] [ text "CP" ]
-                                , flexRow []
+                                , div [ class "flex-row" ]
                                     [ minusButton (UpdatePlayer model.currentPlayer << AdjustCombatPoints)
                                     , valueDisplay player.combatPoints
                                     , plusButton (UpdatePlayer model.currentPlayer << AdjustCombatPoints)
                                     ]
                                 ]
                             ]
-                        , flexRow []
-                            [ guideBoard player.character.guideImage
-                            , actionBoard player.character.actionImage
+                        , div [ class "flex-row" ]
+                            [ img [ src player.character.guideImage, class "guide-board" ] []
+                            , img [ src player.character.actionImage, class "action-board" ] []
                             ]
                         ]
                 else
@@ -284,7 +285,7 @@ renderPlayerSidebarItem currentPlayer index player =
             else
                 "white"
     in
-        flexCol [ style "border-bottom" "solid 1px black", style "border-left" "1px solid black", style "padding" "12px", style "background-color" backgroundColor, onClick (SelectPlayer index) ]
+        div [ class "flex-col", class "player-sidebar-item", style "background-color" backgroundColor, onClick (SelectPlayer index) ]
             [ div [] [ text <| "HP: " ++ (String.fromInt player.health) ]
             , div [] [ text <| "CP: " ++ (String.fromInt player.combatPoints) ]
             ]
@@ -292,12 +293,12 @@ renderPlayerSidebarItem currentPlayer index player =
 
 view : Model -> Html Message
 view model =
-    flexRow []
+    div [ class "flex-row" ]
         [ div [ style "flex-grow" "1" ]
             [ renderPlayer model
             ]
         , div [ style "flex-basis" "250px" ]
-            [ flexCol []
+            [ div [ class "flex-col" ]
                 (List.indexedMap (renderPlayerSidebarItem model.currentPlayer) model.players)
             ]
         ]
@@ -329,6 +330,8 @@ type Message
     | SelectAll
     | ToggleAdjust
     | AdjustDie Int Int
+    | DecreaseNumberOfDice
+    | IncreaseNumberOfDice
     | UpdatePlayer Int PlayerMessage
     | SelectPlayer Int
 
@@ -392,6 +395,20 @@ update message model =
                         index
                         (\die -> { die | result = clamp 1 6 (die.result + amount) })
                         model.roll
+              }
+            , Cmd.none
+            )
+
+        DecreaseNumberOfDice ->
+            ( { model
+                | roll = List.drop 1 model.roll
+              }
+            , Cmd.none
+            )
+
+        IncreaseNumberOfDice ->
+            ( { model
+                | roll = (Die 1 False) :: model.roll
               }
             , Cmd.none
             )

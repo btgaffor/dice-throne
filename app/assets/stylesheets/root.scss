@@ -1,3 +1,73 @@
 // Place all the styles related to the root controller here.
 // They will automatically be included in application.css.
 // You can use Sass (SCSS) here: http://sass-lang.com/
+
+.value-display {
+  padding: 8px;
+}
+
+.action-board {
+  width: 500px;
+  height: 419px;
+  display: inline;
+}
+
+.guide-board {
+  width: 268px;
+  height: 419px;
+  display: inline;
+}
+
+.select-all {
+  margin-top: 16px;
+  margin-left: 4px;
+}
+
+.toggle-adjust {
+  margin-top: 16px;
+  margin-left: 4px;
+}
+
+.roll {
+  margin-top: 16px;
+  margin-left: 16px;
+}
+
+.dice {
+  margin-top: 16px;
+  margin-left: 12px;
+}
+
+.die-button {
+  width: 60px;
+  height: 60px;
+  margin-left: 4px;
+}
+
+.die-icon {
+  width: 20px;
+  height: 20px;
+  display: inline;
+}
+
+.die-adjust {
+  margin-top: 4px;
+  margin-bottom: 4px;
+  margin-left: 4px;
+}
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.player-sidebar-item {
+  border-bottom: solid 1px black;
+  border-left: 1px solid black;
+  padding: 12px;
+}
