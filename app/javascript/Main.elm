@@ -14,22 +14,28 @@ import Array exposing (Array)
 
 type alias Die =
     { result : Int
-    , reroll : Bool
+    , selected : Bool
     }
 
 
 newDie : Int -> Die
 newDie result =
-    { result = result, reroll = False }
+    { result = result, selected = False }
 
 
 type alias Roll =
     List Die
 
 
+type RollState
+    = SelectingNumber
+    | Rolling
+
+
 type alias Model =
     { roll : Roll
-    , showAdjust : Bool
+    , rollState : RollState
+    , rollCount : Int
     , players : List Player
     , currentPlayer : Int
     }
@@ -105,7 +111,7 @@ initialPlayerTwo =
 
 init : ( Model, Cmd Message )
 init =
-    ( Model [ newDie 1, newDie 2, newDie 3, newDie 4, newDie 5 ] False [ initialPlayerOne, initialPlayerTwo ] 0, Cmd.none )
+    ( Model [] SelectingNumber 0 [ initialPlayerOne, initialPlayerTwo ] 0, Cmd.none )
 
 
 
@@ -124,29 +130,9 @@ barbarianDieIcons =
         ]
 
 
-renderDiePlus : Bool -> Int -> Html Message
-renderDiePlus showAdjust index =
-    if showAdjust then
-        button [ class "btn", class "btn-secondary", class "die-adjust", onClick (AdjustDie index 1) ]
-            [ text "+"
-            ]
-    else
-        text ""
-
-
-renderDieMinus : Bool -> Int -> Html Message
-renderDieMinus showAdjust index =
-    if showAdjust then
-        button [ class "btn", class "btn-secondary", class "die-adjust", onClick (AdjustDie index -1) ]
-            [ text "-"
-            ]
-    else
-        text ""
-
-
 dieColor : Bool -> String
-dieColor reroll =
-    if reroll then
+dieColor selected =
+    if selected then
         "btn-danger"
     else
         "btn-success"
@@ -157,8 +143,8 @@ dieIcon number icons =
     Maybe.withDefault "" <| Array.get number icons
 
 
-renderDie die index dieIcons =
-    button [ class "btn", class <| dieColor die.reroll, class "die-button", onClick (ToggleReroll index) ]
+renderDie dieIcons index die =
+    button [ class "btn", class <| dieColor die.selected, class "die-button", onClick (ToggleSelected index) ]
         [ img [ src <| dieIcon die.result dieIcons, class "die-icon" ] []
         , sup []
             [ text <| String.fromInt die.result
@@ -166,52 +152,48 @@ renderDie die index dieIcons =
         ]
 
 
-renderDieWithAdjust showAdjust dieIcons index die =
-    div [ class "flex-col" ]
-        [ renderDiePlus showAdjust index
-        , renderDie die index dieIcons
-        , renderDieMinus showAdjust index
-        ]
+renderDice rollState dieIcons dice =
+    case rollState of
+        SelectingNumber ->
+            div [ class "flex-row dice" ]
+                (List.map
+                    (\number -> button [ class "btn btn-secondary die-button", onClick (SelectDiceAmount number) ] [ text <| String.fromInt number ])
+                    (List.range 1 5)
+                )
 
-
-renderReduceNumberOfDice show =
-    if show then
-        div [ class "flex-col", style "justify-content" "center" ]
-            [ button [ class "btn", class "btn-secondary", class "die-button", onClick DecreaseNumberOfDice ] [ text "-" ]
-            ]
-    else
-        text ""
-
-
-renderIncreaseNumberOfDice showAdjust =
-    if showAdjust then
-        div [ class "flex-col", style "justify-content" "center" ]
-            [ button [ class "btn", class "btn-secondary", class "die-button", onClick IncreaseNumberOfDice ] [ text "+" ]
-            ]
-    else
-        text ""
-
-
-renderDice showAdjust dieIcons dice =
-    div [ class "flex-row dice" ]
-        (List.concat
-            [ [ renderReduceNumberOfDice <| showAdjust && (List.length dice) > 1 ]
-            , (List.indexedMap (renderDieWithAdjust showAdjust dieIcons) dice)
-            , [ renderIncreaseNumberOfDice <| showAdjust && (List.length dice) < 5 ]
-            ]
-        )
+        Rolling ->
+            div [ class "flex-row dice" ] (List.indexedMap (renderDie dieIcons) dice)
 
 
 rollButton =
     button [ class "btn btn-primary", class "roll", onClick DoRoll ] [ text "Roll" ]
 
 
+selectButton allSelected =
+    if allSelected then
+        selectNoneButton
+    else
+        selectAllButton
+
+
+selectNoneButton =
+    button [ class "btn btn-secondary toolbar-button", onClick SelectNone, class "select-all" ] [ text "Select None" ]
+
+
 selectAllButton =
-    button [ class "btn btn-secondary", onClick SelectAll, class "select-all" ] [ text "Select All" ]
+    button [ class "btn btn-secondary toolbar-button", onClick SelectAll, class "select-all" ] [ text "Select All" ]
 
 
-toggleAdjustButton =
-    button [ class "btn btn-secondary", onClick ToggleAdjust, class "toggle-adjust" ] [ text "Adjust" ]
+increaseSelectedDiceButton =
+    button [ class "btn btn-secondary toolbar-button", onClick IncreaseSelectedDice ] [ text "Increase" ]
+
+
+decreaseSelectedDiceButton =
+    button [ class "btn btn-secondary toolbar-button", onClick DecreaseSelectedDice ] [ text "Decrease" ]
+
+
+newRollButton =
+    button [ class "btn btn-success toolbar-button", onClick NewRoll ] [ text "New Roll" ]
 
 
 minusButton message =
@@ -223,19 +205,24 @@ plusButton message =
     button [ class "btn btn-secondary", onClick (message 1) ] [ text "+" ]
 
 
+renderRollCount count =
+    div [ class "roll-count" ] [ text <| "Rolls: " ++ (String.fromInt count) ]
+
+
 renderDiceSection model dieIcons =
     div []
-        [ (renderDice model.showAdjust dieIcons model.roll)
+        [ renderRollCount model.rollCount
+        , (renderDice model.rollState dieIcons model.roll)
         , rollButton
-        , selectAllButton
-        , toggleAdjustButton
+        , selectButton <| (not (List.isEmpty model.roll)) && (List.all .selected model.roll)
+        , increaseSelectedDiceButton
+        , decreaseSelectedDiceButton
+        , newRollButton
         ]
 
 
 valueDisplay value =
-    div [ class "value-display" ]
-        [ text <| String.fromInt value
-        ]
+    div [ class "value-display" ] [ text <| String.fromInt value ]
 
 
 renderPlayer : Model -> Html Message
@@ -325,15 +312,17 @@ type PlayerMessage
 
 type Message
     = DoRoll
-    | NewRoll (List Die)
-    | ToggleReroll Int
+    | RollResult (List Die)
+    | ToggleSelected Int
     | SelectAll
-    | ToggleAdjust
+    | SelectNone
     | AdjustDie Int Int
-    | DecreaseNumberOfDice
-    | IncreaseNumberOfDice
+    | IncreaseSelectedDice
+    | DecreaseSelectedDice
     | UpdatePlayer Int PlayerMessage
     | SelectPlayer Int
+    | SelectDiceAmount Int
+    | NewRoll
 
 
 
@@ -341,11 +330,11 @@ type Message
 
 
 rerollCount dice =
-    List.length <| List.filter .reroll dice
+    List.length <| List.filter .selected dice
 
 
 notRerolledDice dice =
-    List.filter (not << .reroll) dice
+    List.filter (not << .selected) dice
 
 
 updatePlayer : PlayerMessage -> Player -> Player
@@ -362,17 +351,26 @@ update : Message -> Model -> ( Model, Cmd Message )
 update message model =
     case message of
         DoRoll ->
-            ( model, Random.generate NewRoll <| rollDice <| rerollCount model.roll )
+            ( model, Random.generate RollResult <| rollDice <| rerollCount model.roll )
 
-        NewRoll newRoll ->
-            ( { model | roll = List.sortBy .result (List.concat [ (notRerolledDice model.roll), newRoll ]) }, Cmd.none )
+        RollResult rollResult ->
+            ( { model
+                | roll = List.sortBy .result (List.concat [ (notRerolledDice model.roll), rollResult ])
+                , rollCount =
+                    if List.isEmpty rollResult then
+                        model.rollCount
+                    else
+                        model.rollCount + 1
+              }
+            , Cmd.none
+            )
 
-        ToggleReroll index ->
+        ToggleSelected index ->
             ( { model
                 | roll =
                     List.Extra.updateAt
                         index
-                        (\die -> { die | reroll = not die.reroll })
+                        (\die -> { die | selected = not die.selected })
                         model.roll
               }
             , Cmd.none
@@ -380,13 +378,17 @@ update message model =
 
         SelectAll ->
             ( { model
-                | roll = List.map (\die -> { die | reroll = True }) model.roll
+                | roll = List.map (\die -> { die | selected = True }) model.roll
               }
             , Cmd.none
             )
 
-        ToggleAdjust ->
-            ( { model | showAdjust = not model.showAdjust }, Cmd.none )
+        SelectNone ->
+            ( { model
+                | roll = List.map (\die -> { die | selected = False }) model.roll
+              }
+            , Cmd.none
+            )
 
         AdjustDie index amount ->
             ( { model
@@ -399,16 +401,32 @@ update message model =
             , Cmd.none
             )
 
-        DecreaseNumberOfDice ->
+        IncreaseSelectedDice ->
             ( { model
-                | roll = List.drop 1 model.roll
+                | roll =
+                    List.map
+                        (\die ->
+                            if die.selected then
+                                { die | result = clamp 1 6 (die.result + 1) }
+                            else
+                                die
+                        )
+                        model.roll
               }
             , Cmd.none
             )
 
-        IncreaseNumberOfDice ->
+        DecreaseSelectedDice ->
             ( { model
-                | roll = (Die 1 False) :: model.roll
+                | roll =
+                    List.map
+                        (\die ->
+                            if die.selected then
+                                { die | result = clamp 1 6 (die.result - 1) }
+                            else
+                                die
+                        )
+                        model.roll
               }
             , Cmd.none
             )
@@ -422,6 +440,13 @@ update message model =
 
         SelectPlayer selectedPlayer ->
             ( { model | currentPlayer = selectedPlayer }, Cmd.none )
+
+        -- immediately roll with the number of dice selected
+        SelectDiceAmount number ->
+            ( { model | rollState = Rolling }, Random.generate RollResult <| rollDice <| number )
+
+        NewRoll ->
+            ( { model | rollState = SelectingNumber, roll = [], rollCount = 0 }, Cmd.none )
 
 
 

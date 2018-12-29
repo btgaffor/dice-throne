@@ -18,12 +18,7 @@
   display: inline;
 }
 
-.select-all {
-  margin-top: 16px;
-  margin-left: 4px;
-}
-
-.toggle-adjust {
+.toolbar-button {
   margin-top: 16px;
   margin-left: 4px;
 }
@@ -34,7 +29,7 @@
 }
 
 .dice {
-  margin-top: 16px;
+  margin-top: 4px;
   margin-left: 12px;
 }
 
@@ -70,4 +65,9 @@
   border-bottom: solid 1px black;
   border-left: 1px solid black;
   padding: 12px;
+}
+
+.roll-count {
+  margin-top: 16px;
+  margin-left: 16px;
 }
