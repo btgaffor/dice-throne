@@ -8,27 +8,10 @@ import Random
 import List.Extra
 import Array exposing (Array)
 import Model exposing (Model, Die, RollState(..))
-import Character exposing (barbarian, moonElf)
-import Player exposing (Player)
+import Player exposing (Player, initialPlayerOne, initialPlayerTwo)
 
 
 -- INIT
-
-
-initialPlayerOne : Player
-initialPlayerOne =
-    { health = 50
-    , combatPoints = 2
-    , character = barbarian
-    }
-
-
-initialPlayerTwo : Player
-initialPlayerTwo =
-    { health = 50
-    , combatPoints = 2
-    , character = moonElf
-    }
 
 
 init : ( Model, Cmd Message )
@@ -167,17 +150,17 @@ renderPlayer model =
                             [ div [ class "flex-col", style "margin-left" "16px", style "margin-top" "16px" ]
                                 [ h6 [] [ text "Health" ]
                                 , div [ class "flex-row" ]
-                                    [ minusButton (UpdatePlayer model.currentPlayer << AdjustHealth)
+                                    [ minusButton (UpdatePlayer model.currentPlayer << Player.AdjustHealth)
                                     , valueDisplay player.health
-                                    , plusButton (UpdatePlayer model.currentPlayer << AdjustHealth)
+                                    , plusButton (UpdatePlayer model.currentPlayer << Player.AdjustHealth)
                                     ]
                                 ]
                             , div [ class "flex-col", style "margin-left" "16px", style "margin-top" "16px" ]
                                 [ h6 [] [ text "CP" ]
                                 , div [ class "flex-row" ]
-                                    [ minusButton (UpdatePlayer model.currentPlayer << AdjustCombatPoints)
+                                    [ minusButton (UpdatePlayer model.currentPlayer << Player.AdjustCombatPoints)
                                     , valueDisplay player.combatPoints
-                                    , plusButton (UpdatePlayer model.currentPlayer << AdjustCombatPoints)
+                                    , plusButton (UpdatePlayer model.currentPlayer << Player.AdjustCombatPoints)
                                     ]
                                 ]
                             ]
@@ -235,11 +218,6 @@ rollDice rollCount =
     Random.list rollCount rollDie
 
 
-type PlayerMessage
-    = AdjustHealth Int
-    | AdjustCombatPoints Int
-
-
 type Message
     = DoRoll
     | RollResult (List Die)
@@ -249,7 +227,7 @@ type Message
     | AdjustDie Int Int
     | IncreaseSelectedDice
     | DecreaseSelectedDice
-    | UpdatePlayer Int PlayerMessage
+    | UpdatePlayer Int Player.Message
     | SelectPlayer Int
     | SelectDiceAmount Int
     | NewRoll
@@ -265,16 +243,6 @@ rerollCount dice =
 
 notRerolledDice dice =
     List.filter (not << .selected) dice
-
-
-updatePlayer : PlayerMessage -> Player -> Player
-updatePlayer message player =
-    case message of
-        AdjustHealth amount ->
-            { player | health = clamp 0 99 (player.health + amount) }
-
-        AdjustCombatPoints amount ->
-            { player | combatPoints = clamp 0 15 (player.combatPoints + amount) }
 
 
 update : Message -> Model -> ( Model, Cmd Message )
@@ -363,7 +331,7 @@ update message model =
 
         UpdatePlayer playerIndex playerMessage ->
             ( { model
-                | players = List.Extra.updateAt playerIndex (updatePlayer playerMessage) model.players
+                | players = List.Extra.updateAt playerIndex (Player.update playerMessage) model.players
               }
             , Cmd.none
             )
