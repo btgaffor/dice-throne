@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (Html, div, h1, h6, text, button, img, sup)
-import Html.Attributes exposing (style, class, src)
+import Html.Attributes exposing (style, class, src, disabled)
 import Html.Events exposing (onClick)
 import Random
 import List.Extra
@@ -165,60 +165,68 @@ renderDice rollState dieIcons dice =
             div [ class "flex-row dice" ] (List.indexedMap (renderDie dieIcons) dice)
 
 
-rollButton =
-    button [ class "btn btn-primary", class "roll", onClick DoRoll ] [ text "Roll" ]
+rollButton isDisabled =
+    button [ class "btn btn-primary roll", disabled isDisabled, onClick DoRoll ] [ text "Roll" ]
 
 
-selectButton allSelected =
-    if allSelected then
-        selectNoneButton
-    else
-        selectAllButton
+selectNoneButton isDisabled =
+    button [ class "btn btn-secondary toolbar-button", onClick SelectNone, disabled isDisabled, class "select-all" ] [ text "Select None" ]
 
 
-selectNoneButton =
-    button [ class "btn btn-secondary toolbar-button", onClick SelectNone, class "select-all" ] [ text "Select None" ]
+selectAllButton isDisabled =
+    button [ class "btn btn-secondary toolbar-button", onClick SelectAll, disabled isDisabled, class "select-all" ] [ text "Select All" ]
 
 
-selectAllButton =
-    button [ class "btn btn-secondary toolbar-button", onClick SelectAll, class "select-all" ] [ text "Select All" ]
+increaseSelectedDiceButton : Bool -> Html Message
+increaseSelectedDiceButton isDisabled =
+    button [ class "btn btn-secondary toolbar-button", disabled isDisabled, onClick IncreaseSelectedDice ] [ text "Increase" ]
 
 
-increaseSelectedDiceButton =
-    button [ class "btn btn-secondary toolbar-button", onClick IncreaseSelectedDice ] [ text "Increase" ]
+decreaseSelectedDiceButton isDisabled =
+    button [ class "btn btn-secondary toolbar-button", disabled isDisabled, onClick DecreaseSelectedDice ] [ text "Decrease" ]
 
 
-decreaseSelectedDiceButton =
-    button [ class "btn btn-secondary toolbar-button", onClick DecreaseSelectedDice ] [ text "Decrease" ]
-
-
-newRollButton =
-    button [ class "btn btn-success toolbar-button", onClick NewRoll ] [ text "New Roll" ]
+newRollButton isDisabled =
+    button [ class "btn btn-success toolbar-button", disabled isDisabled, onClick NewRoll ] [ text "New Roll" ]
 
 
 minusButton message =
-    button [ class "btn btn-secondary", onClick (message -1) ]
-        [ text "-" ]
+    button [ class "btn btn-secondary", onClick (message -1) ] [ text "-" ]
 
 
 plusButton message =
     button [ class "btn btn-secondary", onClick (message 1) ] [ text "+" ]
 
 
-renderRollCount count =
-    div [ class "roll-count" ] [ text <| "Rolls: " ++ (String.fromInt count) ]
+renderRollCount rollStatus count =
+    case rollStatus of
+        SelectingNumber ->
+            div [ class "roll-count" ] [ text "Choose number of dice to roll" ]
+
+        Rolling ->
+            div [ class "roll-count" ] [ text <| "Rolls: " ++ (String.fromInt count) ]
 
 
 renderDiceSection model dieIcons =
-    div []
-        [ renderRollCount model.rollCount
-        , (renderDice model.rollState dieIcons model.roll)
-        , rollButton
-        , selectButton <| (not (List.isEmpty model.roll)) && (List.all .selected model.roll)
-        , increaseSelectedDiceButton
-        , decreaseSelectedDiceButton
-        , newRollButton
-        ]
+    let
+        isSelectingDice =
+            model.rollState == SelectingNumber
+
+        noDiceSelected =
+            not <| List.any .selected model.roll
+    in
+        div []
+            [ renderRollCount model.rollState model.rollCount
+            , (renderDice model.rollState dieIcons model.roll)
+            , rollButton <| isSelectingDice || noDiceSelected
+            , if (not (List.isEmpty model.roll)) && (List.all .selected model.roll) then
+                selectNoneButton isSelectingDice
+              else
+                selectAllButton isSelectingDice
+            , increaseSelectedDiceButton <| isSelectingDice || noDiceSelected
+            , decreaseSelectedDiceButton <| isSelectingDice || noDiceSelected
+            , newRollButton isSelectingDice
+            ]
 
 
 valueDisplay value =
