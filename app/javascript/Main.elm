@@ -7,87 +7,8 @@ import Html.Events exposing (onClick)
 import Random
 import List.Extra
 import Array exposing (Array)
-
-
--- MODEL
-
-
-type alias Die =
-    { result : Int
-    , selected : Bool
-    }
-
-
-newDie : Int -> Die
-newDie result =
-    { result = result, selected = False }
-
-
-type alias Roll =
-    List Die
-
-
-type RollState
-    = SelectingNumber
-    | Rolling
-
-
-type alias Model =
-    { roll : Roll
-    , rollState : RollState
-    , rollCount : Int
-    , players : List Player
-    , currentPlayer : Int
-    }
-
-
-type alias Player =
-    { health : Int
-    , combatPoints : Int
-    , character : Character
-    }
-
-
-type alias Character =
-    { guideImage : String
-    , actionImage : String
-    , dieIcons : Array.Array String
-    }
-
-
-barbarian : Character
-barbarian =
-    { guideImage = "barbarian_guide.jpg"
-    , actionImage = "barbarian_actions.png"
-    , dieIcons =
-        Array.fromList
-            [ ""
-            , "barbarian_sword.png"
-            , "barbarian_sword.png"
-            , "barbarian_sword.png"
-            , "barbarian_heart.png"
-            , "barbarian_heart.png"
-            , "barbarian_pow.png"
-            ]
-    }
-
-
-moonElf : Character
-moonElf =
-    { guideImage = "moon_elf_guide.jpg"
-    , actionImage = "moon_elf_actions.png"
-    , dieIcons =
-        Array.fromList
-            [ ""
-            , "moon_elf_arrow.png"
-            , "moon_elf_arrow.png"
-            , "moon_elf_arrow.png"
-            , "moon_elf_foot.png"
-            , "moon_elf_foot.png"
-            , "moon_elf_moon.png"
-            ]
-    }
-
+import Model exposing (Model, Die, RollState(..), Player)
+import Character exposing (barbarian, moonElf)
 
 
 -- INIT
@@ -305,7 +226,7 @@ view model =
 
 rollDie : Random.Generator Die
 rollDie =
-    Random.map newDie <| Random.int 1 6
+    Random.map (Die False) <| Random.int 1 6
 
 
 rollDice : Int -> Random.Generator (List Die)
