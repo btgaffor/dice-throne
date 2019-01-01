@@ -7,8 +7,9 @@ import Html.Events exposing (onClick)
 import Random
 import List.Extra
 import Array exposing (Array)
-import Model exposing (Model, Die, RollState(..), Player)
+import Model exposing (Model, Die, RollState(..))
 import Character exposing (barbarian, moonElf)
+import Player exposing (Player)
 
 
 -- INIT

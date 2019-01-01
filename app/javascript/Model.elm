@@ -1,6 +1,6 @@
 module Model exposing (..)
 
-import Character exposing (Character)
+import Player exposing (Player)
 
 
 type alias Die =
@@ -24,11 +24,4 @@ type alias Model =
     , rollCount : Int
     , players : List Player
     , currentPlayer : Int
-    }
-
-
-type alias Player =
-    { health : Int
-    , combatPoints : Int
-    , character : Character
     }
