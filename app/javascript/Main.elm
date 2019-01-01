@@ -10,6 +10,7 @@ import Update exposing (Message(..), update)
 import Model exposing (Model, Die, RollState(..))
 import Player exposing (Player, initialPlayerOne, initialPlayerTwo)
 import Dice exposing (renderDiceSection)
+import Websocket exposing (..)
 
 
 -- INIT
@@ -70,7 +71,7 @@ renderPlayerSidebarItem currentPlayer index player =
 
 subscriptions : Model -> Sub Message
 subscriptions model =
-    Sub.none
+    setFromServer SetFromServer
 
 
 

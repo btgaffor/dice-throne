@@ -19,6 +19,7 @@ type Message
     | SelectPlayer Int
     | SelectDiceAmount Int
     | NewRoll
+    | SetFromServer Int
 
 
 rollDie : Random.Generator Die
@@ -137,3 +138,10 @@ update message model =
 
         NewRoll ->
             ( { model | rollState = SelectingNumber, roll = [], rollCount = 0 }, Cmd.none )
+
+        SetFromServer n ->
+            let
+                _ =
+                    Debug.log "SetFromServer" n
+            in
+                ( model, Cmd.none )

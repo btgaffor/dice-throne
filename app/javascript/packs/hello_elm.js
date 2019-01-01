@@ -10,7 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const target = document.createElement('div')
 
   document.body.appendChild(target)
-  Elm.Main.init({
+  const app = Elm.Main.init({
     node: target
   })
+
+  app.ports.setFromServer.send(3);
 })
