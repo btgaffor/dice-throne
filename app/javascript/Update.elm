@@ -2,7 +2,7 @@ module Update exposing (..)
 
 import Random
 import List.Extra
-import Model exposing (Model, Die, RolliingngState(..))
+import Model exposing (Model, Die, RollState(..))
 import Player
 
 
@@ -26,8 +26,8 @@ rollDie =
     Random.map (Die False) <| Random.int 1 6
 
 
-rollDice : Int -> Random.Generator (List Die)
-rollDice rollCount =
+rollGenerator : Int -> Random.Generator (List Die)
+rollGenerator rollCount =
     Random.list rollCount rollDie
 
 
@@ -43,7 +43,7 @@ update : Message -> Model -> ( Model, Cmd Message )
 update message model =
     case message of
         DoRoll ->
-            ( model, Random.generate RollResult <| rollDice <| rerollCount model.roll )
+            ( model, Random.generate RollResult <| rollGenerator (rerollCount model.roll) )
 
         RollResult rollResult ->
             ( { model
@@ -124,9 +124,7 @@ update message model =
             )
 
         UpdatePlayer playerIndex playerMessage ->
-            ( { model
-                | players = List.Extra.updateAt playerIndex (Player.update playerMessage) model.players
-              }
+            ( { model | players = List.Extra.updateAt playerIndex (Player.update playerMessage) model.players }
             , Cmd.none
             )
 
@@ -135,7 +133,7 @@ update message model =
 
         -- immediately roll with the number of dice selected
         SelectDiceAmount number ->
-            ( { model | rollState = Rolling }, Random.generate RollResult <| rollDice <| number )
+            ( { model | rollState = Rolling }, Random.generate RollResult (rollGenerator number) )
 
         NewRoll ->
             ( { model | rollState = SelectingNumber, roll = [], rollCount = 0 }, Cmd.none )
