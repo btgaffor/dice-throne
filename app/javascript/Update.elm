@@ -2,6 +2,9 @@ module Update exposing (..)
 
 import Random
 import List.Extra
+import Result
+import Http
+import Json.Decode
 import Model exposing (Model, Die, RollState(..))
 import Player
 
@@ -20,6 +23,8 @@ type Message
     | SelectDiceAmount Int
     | NewRoll
     | SetFromServer Int
+    | GotText (Result Http.Error String)
+    | DoSave
 
 
 rollDie : Random.Generator Die
@@ -145,3 +150,22 @@ update message model =
                     Debug.log "SetFromServer" n
             in
                 ( model, Cmd.none )
+
+        GotText result ->
+            case result of
+                Ok text ->
+                    let
+                        _ =
+                            Debug.log "result" text
+                    in
+                        ( model, Cmd.none )
+
+                Err err ->
+                    let
+                        _ =
+                            Debug.log "error" err
+                    in
+                        ( model, Cmd.none )
+
+        DoSave ->
+            ( model, Http.send GotText <| Http.get "http://localhost:5000/save" Json.Decode.string )

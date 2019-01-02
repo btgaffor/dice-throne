@@ -7,12 +7,29 @@ import {
 } from '../Main'
 
 document.addEventListener('DOMContentLoaded', () => {
-  const target = document.createElement('div')
+  const target = document.createElement('div');
 
-  document.body.appendChild(target)
+  document.body.appendChild(target);
   const app = Elm.Main.init({
     node: target
-  })
+  });
 
-  app.ports.setFromServer.send(3);
+  App.cable.subscriptions.create(
+    { channel: "GameChannel", game: "first-game" },
+    {
+      connected: function() {
+        // Called when the subscription is ready for use on the server
+        app.ports.setFromServer.send(1);
+      },
+      disconnected: function() {
+        // Called when the subscription has been terminated by the server
+        app.ports.setFromServer.send(3);
+      },
+      received: function(data) {
+        console.log(data);
+        app.ports.setFromServer.send(2);
+        // Called when there's incoming data on the websocket for this channel
+      }
+    }
+  );
 })

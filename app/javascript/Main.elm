@@ -6,6 +6,8 @@ import Html.Attributes exposing (style, class, src, disabled)
 import Html.Events exposing (onClick)
 import Array exposing (Array)
 import List.Extra
+import Json.Decode
+import Http
 import Update exposing (Message(..), update)
 import Model exposing (Model, Die, RollState(..))
 import Player exposing (Player, initialPlayerOne, initialPlayerTwo)
@@ -14,6 +16,11 @@ import Websocket exposing (..)
 
 
 -- INIT
+
+
+getSave : Cmd Message
+getSave =
+    Http.send GotText <| Http.get "http://localhost:5000/save" Json.Decode.string
 
 
 init : ( Model, Cmd Message )
