@@ -4,8 +4,9 @@ import Random
 import List.Extra
 import Result
 import Http
-import Json.Decode
-import Model exposing (Model, Die, RollState(..))
+import Json.Encode as JE
+import Json.Decode as JD
+import Model exposing (Model, Roll, Die, RollState(..))
 import Player
 
 
@@ -23,7 +24,7 @@ type Message
     | SelectDiceAmount Int
     | NewRoll
     | SetFromServer Int
-    | GotText (Result Http.Error String)
+    | GotText (Result Http.Error ())
     | DoSave
 
 
@@ -43,6 +44,22 @@ rerollCount dice =
 
 notRerolledDice dice =
     List.filter (not << .selected) dice
+
+
+save model =
+    Http.send GotText <| Http.post "http://localhost:5000/save" (Http.jsonBody <| encodeModel model) (JD.succeed ())
+
+
+encodeModel : Model -> JE.Value
+encodeModel model =
+    JE.object
+        [ ( "authenticity_token", JE.string model.csrfToken )
+        , ( "roll"
+          , JE.list
+                (\die -> JE.object [ ( "selected", JE.bool die.selected ), ( "result", JE.int die.result ) ])
+                model.roll
+          )
+        ]
 
 
 update : Message -> Model -> ( Model, Cmd Message )
@@ -154,18 +171,10 @@ update message model =
         GotText result ->
             case result of
                 Ok text ->
-                    let
-                        _ =
-                            Debug.log "result" text
-                    in
-                        ( model, Cmd.none )
+                    ( model, Cmd.none )
 
                 Err err ->
-                    let
-                        _ =
-                            Debug.log "error" err
-                    in
-                        ( model, Cmd.none )
+                    ( model, Cmd.none )
 
         DoSave ->
-            ( model, Http.send GotText <| Http.get "http://localhost:5000/save" Json.Decode.string )
+            ( model, save model )

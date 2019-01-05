@@ -18,14 +18,11 @@ import Websocket exposing (..)
 -- INIT
 
 
-getSave : Cmd Message
-getSave =
-    Http.send GotText <| Http.get "http://localhost:5000/save" Json.Decode.string
-
-
-init : ( Model, Cmd Message )
-init =
-    ( Model [] SelectingNumber 0 [ initialPlayerOne, initialPlayerTwo ] 0, Cmd.none )
+init : { csrfToken : String } -> ( Model, Cmd Message )
+init flags =
+    ( Model flags.csrfToken [] SelectingNumber 0 [ initialPlayerOne, initialPlayerTwo ] 0
+    , Cmd.none
+    )
 
 
 
@@ -85,10 +82,10 @@ subscriptions model =
 -- MAIN
 
 
-main : Program (Maybe {}) Model Message
+main : Program { csrfToken : String } Model Message
 main =
     Browser.element
-        { init = always init
+        { init = init
         , view = view
         , update = update
         , subscriptions = subscriptions

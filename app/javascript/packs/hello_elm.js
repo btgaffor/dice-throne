@@ -10,8 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const target = document.createElement('div');
 
   document.body.appendChild(target);
+
   const app = Elm.Main.init({
-    node: target
+    node: target,
+    flags: {
+      csrfToken: document.querySelector("meta[name='csrf-token']").getAttribute("content")
+    }
   });
 
   App.cable.subscriptions.create(
@@ -26,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         app.ports.setFromServer.send(3);
       },
       received: function(data) {
+        console.log("RECEIVED");
         console.log(data);
         app.ports.setFromServer.send(2);
         // Called when there's incoming data on the websocket for this channel

@@ -19,7 +19,8 @@ type RollState
 
 
 type alias Model =
-    { roll : Roll
+    { csrfToken : String
+    , roll : Roll
     , rollState : RollState
     , rollCount : Int
     , players : List Player
