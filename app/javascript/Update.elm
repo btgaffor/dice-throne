@@ -8,6 +8,7 @@ import Json.Encode as JE
 import Json.Decode as JD
 import Model exposing (Model, Roll, Die, RollState(..))
 import Player
+import Encoders exposing (encodeModel)
 
 
 type Message
@@ -48,18 +49,6 @@ notRerolledDice dice =
 
 save model =
     Http.send GotText <| Http.post "http://localhost:5000/save" (Http.jsonBody <| encodeModel model) (JD.succeed ())
-
-
-encodeModel : Model -> JE.Value
-encodeModel model =
-    JE.object
-        [ ( "authenticity_token", JE.string model.csrfToken )
-        , ( "roll"
-          , JE.list
-                (\die -> JE.object [ ( "selected", JE.bool die.selected ), ( "result", JE.int die.result ) ])
-                model.roll
-          )
-        ]
 
 
 update : Message -> Model -> ( Model, Cmd Message )
