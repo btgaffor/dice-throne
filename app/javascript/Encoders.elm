@@ -2,9 +2,12 @@ module Encoders exposing (..)
 
 import Json.Encode as JE
 import Json.Decode as JD
-import Model exposing (Model, Roll, RollState(..))
-import Player exposing (Player)
+import Model exposing (Model, Roll, RollState(..), Die)
+import Player exposing (Player, StatusEffects)
 import Character exposing (Character)
+
+
+-- encode
 
 
 encodeModel : Model -> JE.Value
@@ -48,6 +51,7 @@ encodePlayers players =
                 [ ( "health", JE.int player.health )
                 , ( "combatPoints", JE.int player.combatPoints )
                 , ( "character", encodeCharacter player.character )
+                , ( "statusEffects", JE.dict identity JE.int player.statusEffects )
                 ]
         )
         players
@@ -60,3 +64,61 @@ encodeCharacter character =
         , ( "actionImage", JE.string character.actionImage )
         , ( "dieIcons", JE.array JE.string character.dieIcons )
         ]
+
+
+
+-- decode
+
+
+decodeModel : String -> JD.Decoder Model
+decodeModel csrfToken =
+    JD.map6
+        Model
+        (JD.succeed csrfToken)
+        (JD.at [ "roll" ] decodeRoll)
+        (JD.at [ "rollState" ] decodeRollState)
+        (JD.at [ "rollCount" ] JD.int)
+        (JD.at [ "players" ] decodePlayers)
+        (JD.at [ "currentPlayer" ] JD.int)
+
+
+decodeRoll : JD.Decoder Roll
+decodeRoll =
+    JD.list <| JD.map2 Die (JD.at [ "selected" ] JD.bool) (JD.at [ "result" ] JD.int)
+
+
+decodeRollState : JD.Decoder RollState
+decodeRollState =
+    JD.string
+        |> JD.andThen
+            (\str ->
+                case str of
+                    "SelectingNumber" ->
+                        JD.succeed SelectingNumber
+
+                    "Rolling" ->
+                        JD.succeed Rolling
+
+                    other ->
+                        JD.fail <| "Unknown roll state: " ++ other
+            )
+
+
+decodePlayers : JD.Decoder (List Player)
+decodePlayers =
+    JD.list <|
+        JD.map4
+            Player
+            (JD.at [ "health" ] JD.int)
+            (JD.at [ "combatPoints" ] JD.int)
+            (JD.at [ "character" ] decodeCharacter)
+            (JD.at [ "statusEffects" ] (JD.dict JD.int))
+
+
+decodeCharacter : JD.Decoder Character
+decodeCharacter =
+    JD.map3
+        Character
+        (JD.at [ "guideImage" ] JD.string)
+        (JD.at [ "actionImage" ] JD.string)
+        (JD.at [ "dieIcons" ] <| JD.array JD.string)

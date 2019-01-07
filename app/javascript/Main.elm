@@ -6,13 +6,14 @@ import Html.Attributes exposing (style, class, src, disabled)
 import Html.Events exposing (onClick)
 import Array exposing (Array)
 import List.Extra
-import Json.Decode
+import Json.Decode as JD
 import Http
 import Update exposing (Message(..), update)
 import Model exposing (Model, Die, RollState(..))
 import Player exposing (Player, initialPlayerOne, initialPlayerTwo)
 import Dice exposing (renderDiceSection)
 import Websocket exposing (..)
+import Encoders exposing (decodeModel)
 
 
 -- INIT
@@ -20,9 +21,7 @@ import Websocket exposing (..)
 
 init : { csrfToken : String } -> ( Model, Cmd Message )
 init flags =
-    ( Model flags.csrfToken [] SelectingNumber 0 [ initialPlayerOne, initialPlayerTwo ] 0
-    , Cmd.none
-    )
+    ( Model flags.csrfToken [] SelectingNumber 0 [ initialPlayerOne, initialPlayerTwo ] 0, Cmd.none )
 
 
 
@@ -79,6 +78,7 @@ subscriptions model =
 
 
 
+-- setFromServer (\jsonValue -> SetFromServer <| JD.decodeValue (decodeModel model.csrfToken) jsonValue)
 -- MAIN
 
 

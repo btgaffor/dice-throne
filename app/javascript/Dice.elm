@@ -92,7 +92,7 @@ selectButton isDisabled allSelected =
 
 increaseSelectedDiceButton : Bool -> Html Message
 increaseSelectedDiceButton isDisabled =
-    button [ class "btn btn-secondary toolbar-button", disabled isDisabled, onClick DoSave ] [ text "Increase" ]
+    button [ class "btn btn-secondary toolbar-button", disabled isDisabled, onClick IncreaseSelectedDice ] [ text "Increase" ]
 
 
 decreaseSelectedDiceButton : Bool -> Html Message

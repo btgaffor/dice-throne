@@ -23,16 +23,16 @@ document.addEventListener('DOMContentLoaded', () => {
     {
       connected: function() {
         // Called when the subscription is ready for use on the server
-        app.ports.setFromServer.send(1);
+        console.log("connected")
       },
       disconnected: function() {
         // Called when the subscription has been terminated by the server
-        app.ports.setFromServer.send(3);
+        console.log("disconnected")
       },
       received: function(data) {
         console.log("RECEIVED");
         console.log(data);
-        app.ports.setFromServer.send(2);
+        app.ports.setFromServer.send(data)
         // Called when there's incoming data on the websocket for this channel
       }
     }

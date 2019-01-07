@@ -8,7 +8,7 @@ import Json.Encode as JE
 import Json.Decode as JD
 import Model exposing (Model, Roll, Die, RollState(..))
 import Player
-import Encoders exposing (encodeModel)
+import Encoders exposing (encodeModel, decodeModel)
 
 
 type Message
@@ -17,16 +17,14 @@ type Message
     | ToggleSelected Int
     | SelectAll
     | SelectNone
-    | AdjustDie Int Int
     | IncreaseSelectedDice
     | DecreaseSelectedDice
     | UpdatePlayer Int Player.Message
     | SelectPlayer Int
     | SelectDiceAmount Int
     | NewRoll
-    | SetFromServer Int
+    | SetFromServer JD.Value
     | GotText (Result Http.Error ())
-    | DoSave
 
 
 rollDie : Random.Generator Die
@@ -48,7 +46,7 @@ notRerolledDice dice =
 
 
 save model =
-    Http.send GotText <| Http.post "http://localhost:5000/save" (Http.jsonBody <| encodeModel model) (JD.succeed ())
+    ( model, Http.send GotText <| Http.post "save" (Http.jsonBody <| encodeModel model) (JD.succeed ()) )
 
 
 update : Message -> Model -> ( Model, Cmd Message )
@@ -58,55 +56,40 @@ update message model =
             ( model, Random.generate RollResult <| rollGenerator (rerollCount model.roll) )
 
         RollResult rollResult ->
-            ( { model
+            { model
                 | roll = List.sortBy .result (List.concat [ (notRerolledDice model.roll), rollResult ])
                 , rollCount =
                     if List.isEmpty rollResult then
                         model.rollCount
                     else
                         model.rollCount + 1
-              }
-            , Cmd.none
-            )
+            }
+                |> save
 
         ToggleSelected index ->
-            ( { model
+            { model
                 | roll =
                     List.Extra.updateAt
                         index
                         (\die -> { die | selected = not die.selected })
                         model.roll
-              }
-            , Cmd.none
-            )
+            }
+                |> save
 
         SelectAll ->
-            ( { model
+            { model
                 | roll = List.map (\die -> { die | selected = True }) model.roll
-              }
-            , Cmd.none
-            )
+            }
+                |> save
 
         SelectNone ->
-            ( { model
+            { model
                 | roll = List.map (\die -> { die | selected = False }) model.roll
-              }
-            , Cmd.none
-            )
-
-        AdjustDie index amount ->
-            ( { model
-                | roll =
-                    List.Extra.updateAt
-                        index
-                        (\die -> { die | result = clamp 1 6 (die.result + amount) })
-                        model.roll
-              }
-            , Cmd.none
-            )
+            }
+                |> save
 
         IncreaseSelectedDice ->
-            ( { model
+            { model
                 | roll =
                     List.map
                         (\die ->
@@ -116,12 +99,11 @@ update message model =
                                 die
                         )
                         model.roll
-              }
-            , Cmd.none
-            )
+            }
+                |> save
 
         DecreaseSelectedDice ->
-            ( { model
+            { model
                 | roll =
                     List.map
                         (\die ->
@@ -131,31 +113,33 @@ update message model =
                                 die
                         )
                         model.roll
-              }
-            , Cmd.none
-            )
+            }
+                |> save
 
         UpdatePlayer playerIndex playerMessage ->
-            ( { model | players = List.Extra.updateAt playerIndex (Player.update playerMessage) model.players }
-            , Cmd.none
-            )
+            { model | players = List.Extra.updateAt playerIndex (Player.update playerMessage) model.players } |> save
 
         SelectPlayer selectedPlayer ->
-            ( { model | currentPlayer = selectedPlayer }, Cmd.none )
+            { model | currentPlayer = selectedPlayer } |> save
 
         -- immediately roll with the number of dice selected
         SelectDiceAmount number ->
             ( { model | rollState = Rolling }, Random.generate RollResult (rollGenerator number) )
 
         NewRoll ->
-            ( { model | rollState = SelectingNumber, roll = [], rollCount = 0 }, Cmd.none )
+            { model | rollState = SelectingNumber, roll = [], rollCount = 0 } |> save
 
-        SetFromServer n ->
-            let
-                _ =
-                    Debug.log "SetFromServer" n
-            in
-                ( model, Cmd.none )
+        SetFromServer result ->
+            case JD.decodeValue (decodeModel model.csrfToken) result of
+                Ok newModel ->
+                    ( newModel, Cmd.none )
+
+                Err error ->
+                    let
+                        _ =
+                            Debug.log "SetFromServer error" error
+                    in
+                        ( model, Cmd.none )
 
         GotText result ->
             case result of
@@ -164,6 +148,3 @@ update message model =
 
                 Err err ->
                     ( model, Cmd.none )
-
-        DoSave ->
-            ( model, save model )

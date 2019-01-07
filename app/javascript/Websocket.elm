@@ -1,6 +1,7 @@
 port module Websocket exposing (..)
 
+import Json.Decode
 import Update exposing (Message(..))
 
 
-port setFromServer : (Int -> msg) -> Sub msg
+port setFromServer : (Json.Decode.Value -> msg) -> Sub msg
