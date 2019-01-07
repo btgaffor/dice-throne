@@ -12,8 +12,8 @@ type alias Character =
 
 barbarian : Character
 barbarian =
-    { guideImage = "barbarian_guide.jpg"
-    , actionImage = "barbarian_actions.png"
+    { guideImage = "barbarian_guide_smaller.jpeg"
+    , actionImage = "barbarian_actions_smaller.png"
     , dieIcons =
         Array.fromList
             [ ""
@@ -29,8 +29,8 @@ barbarian =
 
 moonElf : Character
 moonElf =
-    { guideImage = "moon_elf_guide.jpg"
-    , actionImage = "moon_elf_actions.png"
+    { guideImage = "moon_elf_guide_smaller.jpeg"
+    , actionImage = "moon_elf_actions_smaller.png"
     , dieIcons =
         Array.fromList
             [ ""
