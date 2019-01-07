@@ -3,6 +3,7 @@ module Player exposing (..)
 import Html exposing (Html, div, h6, text, button, img)
 import Html.Attributes exposing (style, class, src)
 import Html.Events exposing (onClick)
+import Dict exposing (Dict)
 import Character exposing (Character, barbarian, moonElf)
 
 
@@ -10,7 +11,12 @@ type alias Player =
     { health : Int
     , combatPoints : Int
     , character : Character
+    , statusEffects : StatusEffects
     }
+
+
+type alias StatusEffects =
+    Dict String Int
 
 
 initialPlayerOne : Player
@@ -18,6 +24,7 @@ initialPlayerOne =
     { health = 50
     , combatPoints = 2
     , character = barbarian
+    , statusEffects = initialStatusEffects
     }
 
 
@@ -26,7 +33,13 @@ initialPlayerTwo =
     { health = 50
     , combatPoints = 2
     , character = moonElf
+    , statusEffects = initialStatusEffects
     }
+
+
+initialStatusEffects : Dict String Int
+initialStatusEffects =
+    Dict.empty
 
 
 
