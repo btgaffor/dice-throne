@@ -25,6 +25,8 @@ type Message
     | NewRoll
     | SetFromServer JD.Value
     | GotText (Result Http.Error ())
+    | OpenStatusEffectsModal
+    | CloseStatusEffectsModal
 
 
 rollDie : Random.Generator Die
@@ -148,3 +150,9 @@ update message model =
 
                 Err err ->
                     ( model, Cmd.none )
+
+        OpenStatusEffectsModal ->
+            { model | statusEffectsModalOpen = True } |> save
+
+        CloseStatusEffectsModal ->
+            { model | statusEffectsModalOpen = False } |> save

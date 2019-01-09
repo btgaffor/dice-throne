@@ -4,6 +4,7 @@ import Html exposing (Html, div, h6, text, button, img)
 import Html.Attributes exposing (style, class, src)
 import Html.Events exposing (onClick)
 import Dict exposing (Dict)
+import Maybe
 import Character exposing (Character, barbarian, moonElf)
 
 
@@ -39,7 +40,14 @@ initialPlayerTwo =
 
 initialStatusEffects : Dict String Int
 initialStatusEffects =
-    Dict.empty
+    Dict.fromList
+        [ ( "concussion", 0 )
+        , ( "stun", 0 )
+        , ( "blind", 0 )
+        , ( "entangle", 0 )
+        , ( "evasive", 0 )
+        , ( "targeted", 0 )
+        ]
 
 
 
@@ -49,6 +57,7 @@ initialStatusEffects =
 type Message
     = AdjustHealth Int
     | AdjustCombatPoints Int
+    | AdjustStatusEffect String Int
 
 
 update : Message -> Player -> Player
@@ -59,6 +68,11 @@ update message player =
 
         AdjustCombatPoints amount ->
             { player | combatPoints = clamp 0 15 (player.combatPoints + amount) }
+
+        AdjustStatusEffect statusEffect amount ->
+            { player
+                | statusEffects = Dict.update statusEffect (Maybe.map <| \count -> count + amount) player.statusEffects
+            }
 
 
 

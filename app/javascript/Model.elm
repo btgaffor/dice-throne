@@ -25,4 +25,5 @@ type alias Model =
     , rollCount : Int
     , players : List Player
     , currentPlayer : Int
+    , statusEffectsModalOpen : Bool
     }

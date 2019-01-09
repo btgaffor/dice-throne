@@ -1,13 +1,14 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, div, h1, h6, text, button, img)
+import Html exposing (Html, div, h1, h6, text, button, img, span)
 import Html.Attributes exposing (style, class, src, disabled)
 import Html.Events exposing (onClick)
 import Array exposing (Array)
 import List.Extra
 import Json.Decode as JD
 import Http
+import Dict
 import Update exposing (Message(..), update)
 import Model exposing (Model, Die, RollState(..))
 import Player exposing (Player, initialPlayerOne, initialPlayerTwo)
@@ -21,7 +22,7 @@ import Encoders exposing (decodeModel)
 
 init : { csrfToken : String } -> ( Model, Cmd Message )
 init flags =
-    ( Model flags.csrfToken [] SelectingNumber 0 [ initialPlayerOne, initialPlayerTwo ] 0, Cmd.none )
+    ( Model flags.csrfToken [] SelectingNumber 0 [ initialPlayerOne, initialPlayerTwo ] 0 False, Cmd.none )
 
 
 
@@ -41,12 +42,57 @@ playArea model =
         |> Maybe.map
             (\player ->
                 div [ class "flex-col" ]
-                    [ renderDiceSection model player.character.dieIcons
-                    , Player.renderStats player |> Html.map (UpdatePlayer model.currentPlayer)
+                    [ div [ class "flex-row" ]
+                        [ div []
+                            [ renderDiceSection model player.character.dieIcons
+                            , Player.renderStats player |> Html.map (UpdatePlayer model.currentPlayer)
+                            ]
+                        , div [ class "flex-col status-effects" ]
+                            [ button [ onClick OpenStatusEffectsModal ] [ text "Adjust Status Effects" ]
+                            , div [] <|
+                                Dict.foldl
+                                    (\statusEffect count memo ->
+                                        if count > 0 then
+                                            div [] [ text <| statusEffect ++ ": " ++ (String.fromInt count) ] :: memo
+                                        else
+                                            memo
+                                    )
+                                    []
+                                    player.statusEffects
+                            ]
+                        ]
                     , Player.renderBoards player
+                    , renderStatusEffectsModal player model
                     ]
             )
         |> Maybe.withDefault (text "")
+
+
+renderStatusEffectsModal : Player -> Model -> Html Message
+renderStatusEffectsModal player model =
+    if model.statusEffectsModalOpen then
+        div [ class "status-effects-modal" ] <|
+            [ button [ class "modal-close", onClick CloseStatusEffectsModal ] [ text "Close" ]
+            , div [] <|
+                Dict.foldl
+                    (\statusEffect count memo ->
+                        div [ class "status-effect-row" ]
+                            [ button
+                                [ disabled (count <= 0)
+                                , class "status-effect-subtract"
+                                , onClick (UpdatePlayer model.currentPlayer (Player.AdjustStatusEffect statusEffect -1))
+                                ]
+                                [ text "-" ]
+                            , button [ class "status-effect-add", onClick (UpdatePlayer model.currentPlayer (Player.AdjustStatusEffect statusEffect 1)) ] [ text "+" ]
+                            , span [ class "status-effect-text" ] [ text <| statusEffect ++ ": " ++ (String.fromInt count) ]
+                            ]
+                            :: memo
+                    )
+                    []
+                    player.statusEffects
+            ]
+    else
+        text ""
 
 
 playersSidebar model =

@@ -21,6 +21,7 @@ encodeModel model =
                 , ( "rollCount", JE.int model.rollCount )
                 , ( "players", encodePlayers model.players )
                 , ( "currentPlayer", JE.int model.currentPlayer )
+                , ( "statusEffectsModalOpen", JE.bool model.statusEffectsModalOpen )
                 ]
           )
         ]
@@ -72,7 +73,7 @@ encodeCharacter character =
 
 decodeModel : String -> JD.Decoder Model
 decodeModel csrfToken =
-    JD.map6
+    JD.map7
         Model
         (JD.succeed csrfToken)
         (JD.at [ "roll" ] decodeRoll)
@@ -80,6 +81,7 @@ decodeModel csrfToken =
         (JD.at [ "rollCount" ] JD.int)
         (JD.at [ "players" ] decodePlayers)
         (JD.at [ "currentPlayer" ] JD.int)
+        (JD.at [ "statusEffectsModalOpen" ] JD.bool)
 
 
 decodeRoll : JD.Decoder Roll

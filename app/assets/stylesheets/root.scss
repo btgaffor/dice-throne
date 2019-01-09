@@ -71,3 +71,42 @@
   margin-top: 16px;
   margin-left: 16px;
 }
+
+.status-effects {
+  margin-top: 16px;
+  margin-left: 16px;
+}
+
+.status-effects-modal {
+  width: 500px;
+  height: 500px;
+  position: absolute;
+  margin: 50px auto 50px auto;
+  max-height: calc(100% - 100px);
+  left: 0;
+  right: 0;
+  padding: 16px;
+  overflow: scroll;
+
+  border: 2px solid black;
+  border-radius: 10px;
+  background-color: white;
+}
+
+.modal-close {
+  cursor: pointer;
+  position: absolute;
+  right: 16px;
+}
+
+.status-effect-row + .status-effect-row {
+  margin-top: 4px;
+}
+
+.status-effect-add {
+  margin-left: 4px;
+}
+
+.status-effect-text {
+  margin-left: 4px;
+}
